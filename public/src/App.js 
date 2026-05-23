@@ -5,7 +5,7 @@ import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChang
 // ══════════════════════════════════════════════════════
 // 🔑 החלף כאן את המפתח שלך
 // ══════════════════════════════════════════════════════
-const GEMINI_KEY = "YOUR_GEMINI_KEY_HERE";
+const GEMINI_KEY = "AIzaSyDNPLUTSj1tpnT19O2VlEgNzfNS5Tc2h3s";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCcGDsgb3ACgbjRAGPY66TWnsq1Y3rlIpw",
