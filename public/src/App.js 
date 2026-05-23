@@ -1,0 +1,866 @@
+import React, { useState, useEffect, useRef } from "react";
+import { initializeApp } from "firebase/app";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "firebase/auth";
+
+// ══════════════════════════════════════════════════════
+// 🔑 החלף כאן את המפתח שלך
+// ══════════════════════════════════════════════════════
+const GEMINI_KEY = "YOUR_GEMINI_KEY_HERE";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCcGDsgb3ACgbjRAGPY66TWnsq1Y3rlIpw",
+  authDomain: "yakov-avugal.firebaseapp.com",
+  projectId: "yakov-avugal",
+  storageBucket: "yakov-avugal.firebasestorage.app",
+  messagingSenderId: "733398338213",
+  appId: "1:733398338213:web:e5dc62d76c32d26b759b4c"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+async function callGemini(prompt) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+      })
+    }
+  );
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
+const BASE_WORDS = {
+  "⚡ Electronics & Circuits": {
+    easy: [
+      {en:"Resistor",he:"נגד",tip:"מגביל זרם חשמלי"},
+      {en:"Capacitor",he:"קבל",tip:"מאחסן מטען חשמלי"},
+      {en:"Diode",he:"דיודה",tip:"מאפשר זרם בכיוון אחד"},
+      {en:"Transistor",he:"טרנזיסטור",tip:"מגבר או מתג אלקטרוני"},
+      {en:"Voltage",he:"מתח",tip:"הפרש פוטנציאל חשמלי"},
+      {en:"Current",he:"זרם",tip:"זרימת אלקטרונים"},
+      {en:"Circuit",he:"מעגל",tip:"נתיב סגור לזרם חשמלי"},
+      {en:"Ground",he:"אדמה",tip:"נקודת ייחוס אפס וולט"},
+      {en:"Frequency",he:"תדירות",tip:"מספר מחזורים לשנייה"},
+      {en:"Amplitude",he:"משרעת",tip:"עוצמת האות המקסימלית"},
+    ],
+    medium: [
+      {en:"Oscillator",he:"מתנד",tip:"מייצר אות מחזורי"},
+      {en:"Amplifier",he:"מגבר",tip:"מגדיל עוצמת אות"},
+      {en:"Impedance",he:"עכבה",tip:"התנגדות לזרם חילופי"},
+      {en:"Rectifier",he:"מיישר",tip:"ממיר AC ל-DC"},
+      {en:"PCB",he:"לוח מעגל מודפס",tip:"משטח לרכיבים אלקטרוניים"},
+      {en:"Microcontroller",he:"בקר מיקרו",tip:"מחשב קטן על שבב"},
+      {en:"PWM",he:"אפנון רוחב פולס",tip:"שליטה בעוצמה דיגיטלית"},
+      {en:"ADC",he:"ממיר אנלוגי-דיגיטלי",tip:"ממיר אות רציף לדיגיטלי"},
+      {en:"DAC",he:"ממיר דיגיטלי-אנלוגי",tip:"ממיר דיגיטלי לאנלוגי"},
+      {en:"Filter",he:"מסנן",tip:"מעביר תדרים נבחרים"},
+    ],
+    hard: [
+      {en:"Phase Noise",he:"רעש פאזה",tip:"אי-יציבות בתדר אוסצילטור"},
+      {en:"VSWR",he:"יחס גל עומד",tip:"מדד התאמת עכבה"},
+      {en:"Nyquist Theorem",he:"משפט נייקוויסט",tip:"דגימה מינימלית לשחזור אות"},
+      {en:"Crosstalk",he:"הפרעה הדדית",tip:"דליפת אות בין מוליכים"},
+      {en:"EMI",he:"הפרעה אלקטרומגנטית",tip:"אות רעש ממקור חיצוני"},
+      {en:"S-Parameters",he:"פרמטרי פיזור",tip:"מאפייני מעגל ב-RF"},
+      {en:"Jitter",he:"ריעד",tip:"שינוי זמן בלתי רצוי באות"},
+      {en:"Slew Rate",he:"קצב עלייה",tip:"מהירות שינוי מתח מקסימלית"},
+      {en:"Harmonics",he:"הרמוניות",tip:"כפולות של התדר הבסיסי"},
+      {en:"Common Mode Rejection",he:"דחיית מצב משותף",tip:"יכולת סינון רעש משותף"},
+    ]
+  },
+  "🔬 Optical Calibration": {
+    easy: [
+      {en:"Wavelength",he:"אורך גל",tip:"מרחק בין שני פסגות גל"},
+      {en:"Lens",he:"עדשה",tip:"מרכז או מפזר אור"},
+      {en:"Aperture",he:"צמצם",tip:"פתח שמשקלל כמות אור"},
+      {en:"Focus",he:"מיקוד",tip:"נקודת התכנסות קרניים"},
+      {en:"Resolution",he:"רזולוציה",tip:"יכולת הפרדת פרטים קטנים"},
+      {en:"Beam",he:"קרן",tip:"עמוד אור מכוון"},
+      {en:"Sensor",he:"חיישן",tip:"ממיר אור לאות חשמלי"},
+      {en:"Pixel",he:"פיקסל",tip:"יחידת תמונה בסיסית"},
+      {en:"Mirror",he:"מראה",tip:"מחזיר קרינה"},
+      {en:"Prism",he:"פריזמה",tip:"מפרק אור לצבעים"},
+    ],
+    medium: [
+      {en:"MTF",he:"פונקציית העברת מודולציה",tip:"מדד חדות אופטית"},
+      {en:"Collimation",he:"קולימציה",tip:"יישור קרני אור למקביליות"},
+      {en:"Distortion",he:"עיוות",tip:"סטייה מצורת תמונה אידיאלית"},
+      {en:"Chromatic Aberration",he:"סטייה כרומטית",tip:"מיקוד שונה לצבעים שונים"},
+      {en:"Vignetting",he:"חשכה שולית",tip:"הכהיית שולי תמונה"},
+      {en:"CCD",he:"חיישן CCD",tip:"חיישן תמונה אנלוגי"},
+      {en:"CMOS",he:"חיישן CMOS",tip:"חיישן תמונה דיגיטלי"},
+      {en:"Boresight",he:"כיוון ציר",tip:"יישור ציר אופטי מכני"},
+      {en:"Stray Light",he:"אור תועה",tip:"קרינה לא רצויה במערכת"},
+      {en:"Depth of Field",he:"עומק שדה",tip:"טווח מרחקים במיקוד"},
+    ],
+    hard: [
+      {en:"Zernike Polynomials",he:"פולינומי זרניקה",tip:"תיאור מתמטי של שגיאות גל"},
+      {en:"Wavefront Error",he:"שגיאת חזית גל",tip:"סטייה מחזית גל אידיאלית"},
+      {en:"Strehl Ratio",he:"יחס סטרל",tip:"מדד איכות אופטית"},
+      {en:"PSF",he:"פונקציית פיזור נקודה",tip:"תגובת מערכת לנקודת אור"},
+      {en:"Interferometry",he:"אינטרפרומטריה",tip:"מדידה בהפרעות גלים"},
+      {en:"Diffraction Limit",he:"גבול עקיפה",tip:"רזולוציה מקסימלית תיאורטית"},
+      {en:"Astigmatism",he:"אסטיגמטיזם",tip:"שגיאה אופטית אקסית"},
+      {en:"Birefringence",he:"דו-שבירה",tip:"מדד שבירה תלוי-פולריזציה"},
+      {en:"OTF",he:"פונקציית העברה אופטית",tip:"מאפיין תדר של מערכת אופטית"},
+      {en:"BRDF",he:"פונקציית בזור",tip:"תיאור השתקפות פני שטח"},
+    ]
+  },
+  "📡 Radiometric Testing": {
+    easy: [
+      {en:"Radiance",he:"בהירות קרינתית",tip:"עוצמת קרינה לכיוון"},
+      {en:"Irradiance",he:"עוצמת הקרנה",tip:"הספק קרינה על שטח"},
+      {en:"Spectrum",he:"ספקטרום",tip:"פיזור תדרי הקרינה"},
+      {en:"Infrared",he:"אינפרה-אדום",tip:"קרינה מתחת לאדום הנראה"},
+      {en:"Blackbody",he:"גוף שחור",tip:"קורן מושלם בכל התדרים"},
+      {en:"Emissivity",he:"פליטיות",tip:"יחס פליטה לגוף שחור"},
+      {en:"Detector",he:"גלאי",tip:"ממיר קרינה לאות"},
+      {en:"Photon",he:"פוטון",tip:"יחידת אנרגיה של אור"},
+      {en:"SNR",he:"יחס אות לרעש",tip:"עוצמת אות חלקי רעש"},
+      {en:"Ultraviolet",he:"אולטרה-סגול",tip:"קרינה מעל הסגול הנראה"},
+    ],
+    medium: [
+      {en:"NEP",he:"הספק שווה-רעש",tip:"אות מינימלי ניתן לגילוי"},
+      {en:"Responsivity",he:"רגישות גלאי",tip:"אות חשמלי לכל וואט קרינה"},
+      {en:"Dark Current",he:"זרם אפלה",tip:"זרם גלאי ללא קרינה"},
+      {en:"Quantum Efficiency",he:"יעילות קוונטית",tip:"יחס פוטונים לאלקטרונים"},
+      {en:"Flat Field Correction",he:"תיקון שדה שטוח",tip:"נורמליזציה של אחידות חיישן"},
+      {en:"Integration Time",he:"זמן אינטגרציה",tip:"משך חשיפת חיישן"},
+      {en:"Saturation",he:"רוויה",tip:"חיישן בעומס מקסימלי"},
+      {en:"Linearity",he:"לינאריות",tip:"יחס ישר בין קלט לפלט"},
+      {en:"Dark Frame",he:"מסגרת אפלה",tip:"תמונה ללא אור לניכוי רעש"},
+      {en:"Radiometric Calibration",he:"כיול רדיומטרי",tip:"כימות מדויק של קרינה"},
+    ],
+    hard: [
+      {en:"NEDT",he:"הפרש טמפרטורה שווה-רעש",tip:"רגישות טמפרטורה מינימלית"},
+      {en:"Absolute Radiometry",he:"רדיומטריה מוחלטת",tip:"כיול מול סטנדרט ראשוני"},
+      {en:"Stray Light Coefficient",he:"מקדם אור תועה",tip:"יחס אור לא-ישיר לכולל"},
+      {en:"Polarimetry",he:"פולרימטריה",tip:"מדידת מצב פולריזציה קרינה"},
+      {en:"IFOV",he:"שדה ראייה מיידי",tip:"זווית שדה פיקסל בודד"},
+      {en:"NEdL",he:"בהירות שווה-רעש",tip:"בהירות מינימלית ניתנת לגילוי"},
+      {en:"Photon Transfer Curve",he:"עקומת העברת פוטונים",tip:"מאפיין רעש-אות של חיישן"},
+      {en:"Spectral Irradiance",he:"עוצמת הקרנה ספקטרלית",tip:"הספק קרינה לרוחב פס"},
+      {en:"Vignetting Correction",he:"תיקון חשכה שולית",tip:"פיצוי על נפילת תאורה"},
+      {en:"MTF at Nyquist",he:"MTF בנייקוויסט",tip:"חדות בתדר הדגימה המקסימלי"},
+    ]
+  },
+  "🔧 Calibration & Testing": {
+    easy: [
+      {en:"Calibration",he:"כיול",tip:"כוונון מכשיר לסטנדרט"},
+      {en:"Accuracy",he:"דיוק",tip:"קרבה לערך האמיתי"},
+      {en:"Precision",he:"רגישות",tip:"חזרתיות מדידות"},
+      {en:"Tolerance",he:"סבילות",tip:"טווח שגיאה מותר"},
+      {en:"Reference",he:"ייחוס",tip:"ערך סטנדרטי ידוע"},
+      {en:"Error",he:"שגיאה",tip:"סטייה מהערך האמיתי"},
+      {en:"Repeatability",he:"חזרתיות",tip:"עקביות מדידות חוזרות"},
+      {en:"Uncertainty",he:"אי-ודאות",tip:"טווח ספק במדידה"},
+      {en:"Baseline",he:"ערך בסיס",tip:"קו ייחוס ראשוני"},
+      {en:"Traceability",he:"ניתנות לייחוס",tip:"שרשרת כיול לסטנדרט לאומי"},
+    ],
+    medium: [
+      {en:"Hysteresis",he:"היסטרזיס",tip:"תלות מדידה בהיסטוריה"},
+      {en:"Drift",he:"סחף",tip:"שינוי איטי בערך לאורך זמן"},
+      {en:"Offset",he:"הסטה",tip:"שגיאה קבועה בכל הטווח"},
+      {en:"Gain Error",he:"שגיאת רווח",tip:"שגיאה פרופורציונלית לערך"},
+      {en:"Noise Floor",he:"רצפת רעש",tip:"רמת רעש מינימלית"},
+      {en:"Dynamic Range",he:"טווח דינמי",tip:"יחס בין מקסימום למינימום"},
+      {en:"Transfer Function",he:"פונקציית העברה",tip:"יחס קלט-פלט של מערכת"},
+      {en:"Cross-calibration",he:"כיול צולב",tip:"השוואה בין שני מכשירים"},
+      {en:"Linearity Error",he:"שגיאת לינאריות",tip:"סטייה מקו ישר"},
+      {en:"Resolution",he:"כושר פירוד",tip:"שינוי מינימלי הניתן לזיהוי"},
+    ],
+    hard: [
+      {en:"Metrology",he:"מטרולוגיה",tip:"מדע המדידות המדויקות"},
+      {en:"GUM",he:"מדריך אי-ודאות",tip:"תקן ISO לחישוב אי-ודאות"},
+      {en:"Type A Uncertainty",he:"אי-ודאות סוג A",tip:"אי-ודאות מניתוח סטטיסטי"},
+      {en:"Type B Uncertainty",he:"אי-ודאות סוג B",tip:"אי-ודאות מהערכה מומחה"},
+      {en:"Coverage Factor",he:"גורם כיסוי",tip:"מכפיל לרמת ביטחון"},
+      {en:"Systematic Error",he:"שגיאה שיטתית",tip:"שגיאה חוזרת ועקבית"},
+      {en:"Gauge R&R",he:"חזרתיות ורבייה",tip:"ניתוח שונות מערכת מדידה"},
+      {en:"Six Sigma",he:"שש סיגמא",tip:"מתודולוגיה לאיכות גבוהה"},
+      {en:"ANOVA",he:"ניתוח שונות",tip:"ניתוח סטטיסטי של מקורות שגיאה"},
+      {en:"Random Error",he:"שגיאה אקראית",tip:"שגיאה בלתי צפויה"},
+    ]
+  },
+  "🌡️ Physics & Optics": {
+    easy: [
+      {en:"Refraction",he:"שבירה",tip:"שינוי כיוון אור בחומר"},
+      {en:"Reflection",he:"החזרה",tip:"אור החוזר ממשטח"},
+      {en:"Absorption",he:"בליעה",tip:"קרינה הנבלעת בחומר"},
+      {en:"Polarization",he:"קיטוב",tip:"כיוון תנודת גל האור"},
+      {en:"Diffraction",he:"עקיפה",tip:"כיפוף אור סביב מכשול"},
+      {en:"Interference",he:"הפרעה",tip:"שילוב גלים"},
+      {en:"Scattering",he:"פיזור",tip:"סטיית אור מכיוונו"},
+      {en:"Coherence",he:"קוהרנטיות",tip:"קביעות יחסי פאזה"},
+      {en:"Dispersion",he:"פיזור ספקטרלי",tip:"פרידת אור לצבעים"},
+      {en:"Transmission",he:"שקיפות",tip:"מעבר קרינה דרך חומר"},
+    ],
+    medium: [
+      {en:"Snell's Law",he:"חוק סנל",tip:"חוק שבירה באופטיקה"},
+      {en:"Numerical Aperture",he:"צמצם מספרי",tip:"זווית קבלת אור מקסימלית"},
+      {en:"Rayleigh Criterion",he:"קריטריון ריילי",tip:"גבול ההפרדה האופטית"},
+      {en:"Stefan-Boltzmann Law",he:"חוק סטפן-בולצמן",tip:"פליטת קרינה לפי טמפרטורה"},
+      {en:"Planck's Law",he:"חוק פלאנק",tip:"ספקטרום גוף שחור"},
+      {en:"Beer-Lambert Law",he:"חוק בר-למבר",tip:"בליעת אור בתמיסה"},
+      {en:"Index of Refraction",he:"מדד שבירה",tip:"יחס מהירות אור בחומר"},
+      {en:"Airy Disk",he:"דיסק אירי",tip:"דפוס עקיפה של צמצם עגול"},
+      {en:"Fourier Transform",he:"טרנספורם פורייה",tip:"פירוק אות לתדרים"},
+      {en:"Fresnel Equations",he:"משוואות פרנל",tip:"חישוב החזרה ושבירה"},
+    ],
+    hard: [
+      {en:"Maxwell Equations",he:"משוואות מקסוול",tip:"תיאור שדות אלקטרומגנטיים"},
+      {en:"Jones Calculus",he:"חשבון ג'ונס",tip:"תיאור מתמטי של קיטוב"},
+      {en:"Mueller Matrix",he:"מטריצת מולר",tip:"תיאור שינוי קיטוב"},
+      {en:"Etendue",he:"זרם-קרינה",tip:"מדד שמרני לאופטיקה"},
+      {en:"Seidel Aberrations",he:"סטיות זידל",tip:"חמש סטיות מונוכרומטיות"},
+      {en:"Coherence Length",he:"אורך קוהרנטיות",tip:"מרחק שמירת קוהרנטיות"},
+      {en:"Speckle Pattern",he:"דפוס נקודות",tip:"הפרעה של אור קוהרנטי"},
+      {en:"Holography",he:"הולוגרפיה",tip:"הקלטת תמונה תלת-ממדית"},
+      {en:"Quantum Optics",he:"אופטיקה קוונטית",tip:"אינטראקציה אור-חומר קוונטית"},
+      {en:"Aberration Theory",he:"תורת הסטיות",tip:"ניתוח שגיאות אופטיות"},
+    ]
+  },
+};
+
+const CATEGORIES=Object.keys(BASE_WORDS);
+const ALL_BASE=CATEGORIES.flatMap(cat=>["easy","medium","hard"].flatMap(lvl=>(BASE_WORDS[cat][lvl]||[]).map(w=>({...w,category:cat,level:lvl}))));
+const MAX_LIVES=10;
+const RESET_MS=4*60*60*1000;
+const DUCK_STAGES=[
+  {min:0,size:44,smart:0,color:"#fde68a",name:"ברווזון תינוק 🐣"},
+  {min:8,size:52,smart:20,color:"#fcd34d",name:"ברווז סקרן 🐥"},
+  {min:20,size:60,smart:40,color:"#34d399",name:"ברווז לומד 🦆"},
+  {min:40,size:68,smart:60,color:"#60a5fa",name:"ברווז מתקדם 🎓"},
+  {min:70,size:76,smart:75,color:"#a78bfa",name:"ברווז חכם 🧑‍💻"},
+  {min:110,size:84,smart:88,color:"#f472b6",name:"ברווז מדען 🧠"},
+  {min:160,size:92,smart:95,color:"#f59e0b",name:"ברווז גאון 🏆"},
+  {min:230,size:100,smart:100,color:"#ef4444",name:"ברווז מאסטר! 👑"},
+];
+const LEVELS_XP=[
+  {name:"מתחיל",xp:0,color:"#4ade80",emoji:"🌱"},
+  {name:"חוקר",xp:200,color:"#22d3ee",emoji:"🔭"},
+  {name:"מפתח",xp:500,color:"#a78bfa",emoji:"💻"},
+  {name:"מומחה",xp:1000,color:"#f59e0b",emoji:"🔬"},
+  {name:"מאסטר",xp:2000,color:"#ef4444",emoji:"🏆"},
+];
+const CAT_COLORS=["#f472b6","#fb923c","#facc15","#4ade80","#22d3ee","#a78bfa","#f87171","#34d399"];
+const WRONG_MSGS=["אוי! הברווז בוכה! 😭","לא נכון! הברווז כועס! 🤬","שגיאה! הברווז נעלב! 😤","ממה?! הברווז המום! 😵‍💫","אוף... הברווז נמס! 🫠"];
+const RIGHT_MSGS=["מעולה! הברווז קופץ! 🎉","נכון! הברווז רוקד! 💃","פרפקט! הברווז ממריא! 🚀","גאון! הברווז חוגג! 🥳","ברבו! הברווז מחא כפיים! 👏"];
+const KEY="wmp_v_final";
+function loadS(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch{return null;}}
+function saveS(s){try{localStorage.setItem(KEY,JSON.stringify(s));}catch{}}
+function initS(){return{xp:0,correct:0,total:0,streak:0,bestStreak:0,lives:MAX_LIVES,resetAt:null,seen:{},aiWords:[],customWords:[],selectedLevel:"easy",lang:"he"};}
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function rnd(a){return a[Math.floor(Math.random()*a.length)];}
+function getLevel(xp){return[...LEVELS_XP].reverse().find(l=>xp>=l.xp)||LEVELS_XP[0];}
+function getNext(xp){return LEVELS_XP.find(l=>l.xp>xp)||null;}
+function getDuck(c){return[...DUCK_STAGES].reverse().find(d=>c>=d.min)||DUCK_STAGES[0];}
+function lvlLabel(l,lang){if(lang==="en")return l==="easy"?"🟢 Easy":l==="medium"?"🟡 Medium":"🔴 Hard";return l==="easy"?"🟢 קל":l==="medium"?"🟡 בינוני":"🔴 קשה";}
+function fmt(ms){if(ms<=0)return"00:00:00";const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000),s=Math.floor((ms%60000)/1000);return`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;}
+
+function DuckSVG({stage,mood,size}){
+  const s=size||stage.size,col=stage.color,smart=stage.smart;
+  const angry=mood==="angry",happy=mood==="happy";
+  const glasses=smart>=40,cap=smart>=60,coat=smart>=75;
+  return(
+    <svg width={s} height={s} viewBox="0 0 100 110" style={{filter:happy?"drop-shadow(0 0 8px gold)":angry?"drop-shadow(0 0 8px red)":"drop-shadow(0 0 4px rgba(255,255,255,0.2))",transition:"all 0.3s"}}>
+      {coat&&<><rect x="28" y="82" width="44" height="20" rx="4" fill="white" opacity="0.9"/><line x1="50" y1="82" x2="50" y2="102" stroke="#e2e8f0" strokeWidth="1"/><circle cx="43" cy="88" r="2" fill="#3b82f6"/><circle cx="43" cy="95" r="2" fill="#3b82f6"/></>}
+      <ellipse cx="50" cy="72" rx="30" ry="24" fill={angry?"#ef4444":col} opacity="0.95"/>
+      <ellipse cx="24" cy="75" rx="13" ry="9" fill={col} opacity="0.7" transform={happy?"rotate(-22 24 75)":angry?"rotate(22 24 75)":""} style={{transition:"transform 0.3s"}}/>
+      <ellipse cx="76" cy="75" rx="13" ry="9" fill={col} opacity="0.7" transform={happy?"rotate(22 76 75)":angry?"rotate(-22 76 75)":""} style={{transition:"transform 0.3s"}}/>
+      <circle cx="50" cy="40" r="22" fill={angry?"#ef4444":col}/>
+      <ellipse cx={angry?"69":"68"} cy="43" rx="11" ry="6" fill="#f59e0b" transform={angry?"rotate(12 68 43)":happy?"rotate(-6 68 43)":""} style={{transition:"all 0.3s"}}/>
+      {glasses?(<><circle cx="41" cy="37" r="8" fill="none" stroke="#94a3b8" strokeWidth="1.5"/><circle cx="59" cy="37" r="8" fill="none" stroke="#94a3b8" strokeWidth="1.5"/><line x1="49" y1="37" x2="51" y2="37" stroke="#94a3b8" strokeWidth="1.5"/><circle cx="41" cy="37" r="5" fill="#1e1b4b"/><circle cx="59" cy="37" r="5" fill="#1e1b4b"/><circle cx="43" cy="35" r="1.5" fill="white"/><circle cx="61" cy="35" r="1.5" fill="white"/></>):(<><circle cx="41" cy="37" r="6" fill="#1a1a2e"/><circle cx="59" cy="37" r="6" fill="#1a1a2e"/><circle cx="43" cy="35" r="2" fill="white"/><circle cx="61" cy="35" r="2" fill="white"/></>)}
+      {angry&&<><line x1="35" y1="28" x2="47" y2="32" stroke="#7f1d1d" strokeWidth="2.5" strokeLinecap="round"/><line x1="53" y1="32" x2="65" y2="28" stroke="#7f1d1d" strokeWidth="2.5" strokeLinecap="round"/></>}
+      {happy&&<><line x1="35" y1="32" x2="47" y2="28" stroke="#065f46" strokeWidth="2" strokeLinecap="round"/><line x1="53" y1="28" x2="65" y2="32" stroke="#065f46" strokeWidth="2" strokeLinecap="round"/></>}
+      {cap&&<><rect x="32" y="17" width="36" height="6" rx="2" fill="#1e1b4b"/><polygon points="50,6 32,17 68,17" fill="#1e1b4b"/><line x1="68" y1="17" x2="73" y2="25" stroke="#f59e0b" strokeWidth="2"/><circle cx="73" cy="27" r="2.5" fill="#f59e0b"/></>}
+      <ellipse cx="41" cy="96" rx="7" ry="4" fill="#f59e0b"/><ellipse cx="59" cy="96" rx="7" ry="4" fill="#f59e0b"/>
+      {happy&&<><text x="12" y="28" fontSize="12">✨</text><text x="74" y="28" fontSize="12">⭐</text></>}
+      {angry&&<><text x="8" y="24" fontSize="10">💢</text><text x="80" y="24" fontSize="10">💢</text></>}
+    </svg>
+  );
+}
+
+const CSS=`
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Heebo',sans-serif;-webkit-tap-highlight-color:transparent;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:2px;}
+@keyframes duckHappy{0%,100%{transform:translateY(0)rotate(0)scale(1)}20%{transform:translateY(-24px)rotate(-12deg)scale(1.2)}60%{transform:translateY(-14px)rotate(10deg)scale(1.12)}}
+@keyframes duckAngry{0%,100%{transform:translateX(0)}15%{transform:translateX(-14px)rotate(-10deg)}30%{transform:translateX(14px)rotate(10deg)}60%{transform:translateX(10px)rotate(6deg)}}
+@keyframes duckIdle{0%,100%{transform:translateY(0)rotate(0)}30%{transform:translateY(-6px)rotate(-2deg)}70%{transform:translateY(-4px)rotate(2deg)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+@keyframes xpFloat{0%{opacity:1;transform:translateY(0)scale(1)}100%{opacity:0;transform:translateY(-70px)scale(1.7)}}
+@keyframes rainbow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 15px rgba(255,255,255,0.07)}50%{box-shadow:0 0 30px rgba(255,255,255,0.2)}}
+@keyframes levelUp{0%{transform:scale(1)rotate(0)}25%{transform:scale(1.4)rotate(-15deg)}50%{transform:scale(1.5)rotate(15deg)}75%{transform:scale(1.2)rotate(-5deg)}100%{transform:scale(1)rotate(0)}}
+.btn{cursor:pointer;border:none;font-family:'Heebo',sans-serif;transition:all 0.2s;}
+.btn:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-2px);}
+.btn:active:not(:disabled){transform:translateY(0)scale(0.97);}
+input,select,textarea{font-family:'Heebo',sans-serif;}
+`;
+function BigTimer({resetAt,lang}){
+  const[rem,setRem]=useState(Math.max(0,resetAt-Date.now()));
+  useEffect(()=>{const t=setInterval(()=>setRem(Math.max(0,resetAt-Date.now())),1000);return()=>clearInterval(t);},[resetAt]);
+  return(
+    <div style={{textAlign:"center",padding:"10px 0"}}>
+      <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:4,letterSpacing:2}}>{lang==="en"?"🔄 LIVES RESET IN":"🔄 ברווזים חוזרים בעוד"}</div>
+      <div style={{fontSize:46,fontWeight:900,color:"#f59e0b",fontVariantNumeric:"tabular-nums",letterSpacing:4,textShadow:"0 0 20px rgba(245,158,11,0.5)"}}>{fmt(rem)}</div>
+      <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginTop:4,letterSpacing:4}}>{lang==="en"?"HH : MM : SS":"שע : דק : שנ"}</div>
+    </div>
+  );
+}
+
+function AddWordsScreen({state,setState,onBack}){
+  const lang=state.lang||"he";
+  const[enWord,setEnWord]=useState("");
+  const[heWord,setHeWord]=useState("");
+  const[category,setCategory]=useState(CATEGORIES[0]);
+  const[level,setLevel]=useState("easy");
+  const[loading,setLoading]=useState(false);
+  const[status,setStatus]=useState("");
+  const[preview,setPreview]=useState(null);
+
+  async function handleGenerate(){
+    if(!enWord.trim()&&!heWord.trim()){setStatus("⚠️ הכנס לפחות מילה אחת");return;}
+    setLoading(true);setStatus("🤖 AI בונה שאלות...");setPreview(null);
+    try{
+      const text=await callGemini(`You are a technical vocabulary expert. For the word: English="${enWord||"?"}", Hebrew="${heWord||"?"}". Category: "${category}", Level: "${level}". Generate: {"en":"correct english","he":"תרגום עברי","tip":"טיפ קצר בעברית","wrongHe":["שגוי1","שגוי2","שגוי3"],"wrongEn":["wrong1","wrong2","wrong3"]}. Return JSON only.`);
+      const result=JSON.parse(text.replace(/```json|```/g,"").trim());
+      setPreview(result);setStatus("✅ AI הכין שאלה! בדוק ואשר:");
+    }catch(e){setStatus("❌ שגיאה: "+e.message);}
+    finally{setLoading(false);}
+  }
+
+  function handleSave(){
+    if(!preview)return;
+    const newWord={...preview,category,level,fromCustom:true};
+    setState(prev=>{const n={...prev,customWords:[...(prev.customWords||[]),newWord]};saveS(n);return n;});
+    setStatus("🎉 נשמר!");setEnWord("");setHeWord("");setPreview(null);
+    setTimeout(()=>setStatus(""),3000);
+  }
+
+  return(
+    <div style={{padding:"16px",maxWidth:460,margin:"0 auto"}}>
+      <div style={{display:"flex",gap:8,marginBottom:16,alignItems:"center"}}>
+        <button onClick={onBack} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",color:"#94a3b8",borderRadius:10,padding:"7px 13px",fontSize:13,fontWeight:700}}>🏠 בית</button>
+        <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>➕ הוסף מילים עם AI</div>
+      </div>
+      <div style={{background:"rgba(255,255,255,0.05)",borderRadius:18,padding:16,border:"1px solid rgba(255,255,255,0.1)",marginBottom:14}}>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.7)",marginBottom:12,fontWeight:700}}>🤖 AI יבנה שאלות ותשובות אוטומטית!</div>
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:4}}>מילה באנגלית</div>
+          <input value={enWord} onChange={e=>setEnWord(e.target.value)} placeholder="לדוגמה: Spectrometer" style={{width:"100%",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:14,outline:"none",direction:"ltr"}}/>
+        </div>
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:4}}>מילה בעברית (אופציונלי)</div>
+          <input value={heWord} onChange={e=>setHeWord(e.target.value)} placeholder="לדוגמה: ספקטרומטר" style={{width:"100%",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:14,outline:"none",direction:"rtl"}}/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+          <div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:4}}>קטגוריה</div>
+            <select value={category} onChange={e=>setCategory(e.target.value)} style={{width:"100%",background:"#1e1b4b",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none"}}>
+              {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+              <option value="➕ מותאם אישית">➕ מותאם אישית</option>
+            </select>
+          </div>
+          <div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:4}}>רמה</div>
+            <select value={level} onChange={e=>setLevel(e.target.value)} style={{width:"100%",background:"#1e1b4b",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none"}}>
+              <option value="easy">🟢 קל</option>
+              <option value="medium">🟡 בינוני</option>
+              <option value="hard">🔴 קשה</option>
+            </select>
+          </div>
+        </div>
+        <button onClick={handleGenerate} disabled={loading} className="btn" style={{width:"100%",background:"linear-gradient(135deg,#a78bfa,#22d3ee)",border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:14,fontWeight:800}}>
+          {loading?<span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⚙️</span>:"🤖 AI - בנה שאלה ותשובות"}
+        </button>
+        {status&&<div style={{marginTop:10,fontSize:13,color:"#a78bfa",textAlign:"center",fontWeight:600}}>{status}</div>}
+      </div>
+      {preview&&(
+        <div style={{background:"rgba(74,222,128,0.08)",border:"1px solid rgba(74,222,128,0.3)",borderRadius:16,padding:16,marginBottom:14,animation:"fadeIn 0.3s ease"}}>
+          <div style={{fontSize:12,color:"#4ade80",fontWeight:800,marginBottom:10}}>תצוגה מקדימה:</div>
+          <div style={{marginBottom:6}}><span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>אנגלית: </span><span style={{fontSize:16,fontWeight:900,color:"#fff",direction:"ltr"}}>{preview.en}</span></div>
+          <div style={{marginBottom:6}}><span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>עברית: </span><span style={{fontSize:16,fontWeight:900,color:"#fff"}}>{preview.he}</span></div>
+          <div style={{marginBottom:8}}><span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>טיפ: </span><span style={{fontSize:13,color:"#818cf8"}}>{preview.tip}</span></div>
+          <button onClick={handleSave} className="btn" style={{width:"100%",background:"linear-gradient(135deg,#4ade80,#22d3ee)",border:"none",borderRadius:12,padding:"12px",color:"#1a1a2e",fontSize:14,fontWeight:900}}>✅ שמור מילה זו</button>
+        </div>
+      )}
+      {(state.customWords||[]).length>0&&(
+        <div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",fontWeight:800,marginBottom:8}}>📋 המילים שהוספת ({(state.customWords||[]).length})</div>
+          {(state.customWords||[]).slice(-5).reverse().map((w,i)=>(
+            <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 14px",border:"1px solid rgba(255,255,255,0.08)",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <div><span style={{fontSize:14,fontWeight:700,color:"#fff",direction:"ltr"}}>{w.en}</span><span style={{fontSize:12,color:"rgba(255,255,255,0.5)",marginRight:8}}> = {w.he}</span></div>
+              <button onClick={()=>{setState(prev=>{const cw=[...(prev.customWords||[])];cw.splice(prev.customWords.length-1-i,1);const n={...prev,customWords:cw};saveS(n);return n;});}} className="btn" style={{background:"rgba(239,68,68,0.15)",border:"none",borderRadius:8,padding:"4px 8px",color:"#f87171",fontSize:12}}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LoginScreen({onLogin}){
+  const[loading,setLoading]=useState(false);
+  const[error,setError]=useState("");
+  async function handleGoogle(){
+    setLoading(true);setError("");
+    try{const r=await signInWithPopup(auth,provider);onLogin(r.user);}
+    catch(e){setError(e.message);}
+    finally{setLoading(false);}
+  }
+  return(
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:28,background:"linear-gradient(135deg,#0f0c29,#302b63,#24243e)"}}>
+      <style>{CSS}</style>
+      <div style={{textAlign:"center",marginBottom:32}}>
+        <DuckSVG stage={DUCK_STAGES[0]} mood="idle" size={100}/>
+        <div style={{fontSize:32,fontWeight:900,marginTop:12,background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>WordMaster Pro</div>
+        <div style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginTop:4}}>🔬 כיול • אופטיקה • אלקטרוניקה • פיזיקה</div>
+      </div>
+      <div style={{background:"rgba(255,255,255,0.06)",borderRadius:24,padding:28,maxWidth:320,width:"100%",border:"1px solid rgba(255,255,255,0.1)"}}>
+        <div style={{fontSize:18,fontWeight:800,color:"#fff",textAlign:"center",marginBottom:20}}>התחבר לחשבונך</div>
+        <button onClick={handleGoogle} disabled={loading} className="btn" style={{width:"100%",background:"white",borderRadius:14,padding:"14px",fontSize:15,fontWeight:700,color:"#1a1a2e",display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+          {loading?<span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⚙️</span>:<><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>התחבר עם Google</>}
+        </button>
+        {error&&<div style={{color:"#f87171",fontSize:12,textAlign:"center",marginTop:12,direction:"rtl"}}>{error}</div>}
+        <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",textAlign:"center",marginTop:16}}>ההתקדמות שלך תישמר בענן ☁️</div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileScreen({user,state,setState,onBack,onLogout}){
+  const lang=state.lang||"he";
+  const duck=getDuck(state.correct);
+  return(
+    <div style={{padding:"16px",maxWidth:460,margin:"0 auto"}}>
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        <button onClick={onBack} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",color:"#94a3b8",borderRadius:10,padding:"7px 13px",fontSize:13,fontWeight:700}}>🏠 בית</button>
+      </div>
+      <div style={{textAlign:"center",marginBottom:20}}>
+        {user?.photoURL&&<img src={user.photoURL} alt="" style={{width:80,height:80,borderRadius:"50%",border:"3px solid #a78bfa",marginBottom:8}} onError={e=>e.target.style.display="none"}/>}
+        <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{user?.displayName||"משתמש"}</div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.5)"}}>{user?.email}</div>
+        <div style={{fontSize:11,color:duck.color,marginTop:4}}>{duck.name}</div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        {[{l:"✅ נכונות",v:state.correct,c:"#4ade80"},{l:"🔥 רצף",v:state.streak,c:"#f59e0b"},{l:"⭐ שיא",v:state.bestStreak,c:"#a78bfa"},{l:"🎯 סה\"כ",v:state.total,c:"#22d3ee"},{l:"📚 מילים",v:Object.keys(state.seen).length,c:"#f472b6"},{l:"⚡ XP",v:state.xp,c:"#ef4444"}].map(s=>(
+          <div key={s.l} style={{background:"rgba(255,255,255,0.05)",borderRadius:14,padding:"14px",textAlign:"center",border:`1px solid ${s.c}22`}}>
+            <div style={{fontSize:24,fontWeight:900,color:s.c}}>{s.v}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:2}}>{s.l}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{background:"rgba(255,255,255,0.04)",borderRadius:16,padding:16,border:"1px solid rgba(255,255,255,0.08)",marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>🌐 שפת האפליקציה</div>
+        <div style={{display:"flex",gap:8}}>
+          {["he","en"].map(l=>(
+            <button key={l} onClick={()=>setState(p=>{const n={...p,lang:l};saveS(n);return n;})} className="btn" style={{flex:1,padding:"10px",borderRadius:12,fontWeight:800,fontSize:14,background:lang===l?"rgba(167,139,250,0.25)":"rgba(255,255,255,0.04)",border:`2px solid ${lang===l?"#a78bfa":"rgba(255,255,255,0.1)"}`,color:lang===l?"#a78bfa":"rgba(255,255,255,0.5)"}}>
+              {l==="he"?"🇮🇱 עברית":"🇺🇸 English"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <button onClick={onLogout} className="btn" style={{width:"100%",padding:"12px",background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:12,color:"#f87171",fontSize:14,fontWeight:700}}>
+        🚪 {lang==="en"?"Sign Out":"התנתק"}
+      </button>
+    </div>
+  );
+}
+
+function ExplainModal({word,onClose,lang}){
+  const[text,setText]=useState("");
+  const[loading,setLoading]=useState(true);
+  const[error,setError]=useState("");
+  useEffect(()=>{
+    let gone=false;
+    const prompt=lang==="en"?`Explain the technical term "${word.en}" (Hebrew: "${word.he}") from "${word.category}". Include: 1.📖 Definition 2.💡 Example 3.🧠 Memory trick 4.🔗 Related terms. Be friendly, use emojis.`:`הסבר את המילה הטכנית "${word.en}" (עברית: "${word.he}") מהתחום "${word.category}". כלול: 1.📖 הגדרה פשוטה 2.💡 דוגמה מעשית 3.🧠 טריק לזכור 4.🔗 מילים קשורות. דבר בחום עם אמוגיים.`;
+    callGemini(prompt).then(t=>{if(!gone)setText(t);}).catch(e=>{if(!gone)setError("שגיאה: "+e.message);}).finally(()=>{if(!gone)setLoading(false);});
+    return()=>{gone=true;};
+  },[word.en]);
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(16px)"}}>
+      <div style={{background:"linear-gradient(135deg,#1e1b4b,#0f172a)",border:"1px solid rgba(167,139,250,0.4)",borderRadius:24,padding:24,maxWidth:440,width:"100%",maxHeight:"82vh",overflowY:"auto",boxShadow:"0 0 60px rgba(167,139,250,0.25)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+          <div>
+            <div style={{fontSize:11,color:"#a78bfa",fontWeight:800,letterSpacing:2,marginBottom:4}}>🤖 Gemini AI</div>
+            <div style={{fontSize:22,fontWeight:900,color:"#fff",direction:"ltr"}}>{word.en}</div>
+            <div style={{fontSize:13,color:"rgba(255,255,255,0.55)",direction:"rtl"}}>{word.he}</div>
+          </div>
+          <button onClick={onClose} className="btn" style={{background:"rgba(255,255,255,0.1)",border:"none",color:"#fff",borderRadius:"50%",width:36,height:36,fontSize:18}}>✕</button>
+        </div>
+        {loading?<div style={{textAlign:"center",padding:40}}><div style={{fontSize:48,animation:"spin 1.2s linear infinite",display:"inline-block"}}>⚙️</div><div style={{color:"#a78bfa",fontSize:14,marginTop:12}}>Gemini AI מכין הסבר...</div></div>
+        :error?<div style={{color:"#f87171",fontSize:14,padding:20,textAlign:"center"}}>{error}</div>
+        :<div style={{color:"#e2e8f0",lineHeight:1.9,fontSize:14,whiteSpace:"pre-wrap",textAlign:"right",direction:"rtl"}}>{text}</div>}
+      </div>
+    </div>
+  );
+}
+
+function NoLivesScreen({state,onHome,lang}){
+  return(
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:28,textAlign:"center",background:"linear-gradient(135deg,#0f0c29,#1a0533,#0c1a2e)"}}>
+      <DuckSVG stage={DUCK_STAGES[0]} mood="angry" size={120}/>
+      <div style={{fontSize:26,fontWeight:900,color:"#fff",marginTop:16,marginBottom:12}}>{lang==="en"?"No lives left!":"נגמרו לך החיים!"}</div>
+      <div style={{fontSize:20,fontWeight:800,lineHeight:1.6,marginBottom:20,maxWidth:300,background:"linear-gradient(135deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>
+        "מאמין בך יותר<br/>ממה שאתה חושב" 💛
+      </div>
+      <BigTimer resetAt={state.resetAt} lang={lang}/>
+      <div style={{fontSize:14,color:"rgba(255,255,255,0.4)",marginBottom:20}}>🦆 × 10 חיים חדשים מחכים לך!</div>
+      <button onClick={onHome} className="btn" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:14,padding:"13px 28px",color:"#fff",fontSize:15,fontWeight:700}}>
+        🏠 {lang==="en"?"Home":"דף הבית"}
+      </button>
+    </div>
+  );
+}
+
+function HomeScreen({user,state,setState,onStart,onProfile,onAddWords,onReset}){
+  const lang=state.lang||"he";
+  const level=getLevel(state.xp),nextLevel=getNext(state.xp);
+  const duck=getDuck(state.correct);
+  const customWords=state.customWords||[];
+  const totalWords=ALL_BASE.length+(state.aiWords?.length||0)+customWords.length;
+  const seen=Object.keys(state.seen).length;
+  const xpPct=Math.min(100,((state.xp-level.xp)/((nextLevel?nextLevel.xp:level.xp+1000)-level.xp))*100);
+  return(
+    <div style={{padding:"16px",maxWidth:460,margin:"0 auto"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <button onClick={onProfile} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,padding:"8px 12px",color:"#fff",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+          {user?.photoURL&&<img src={user.photoURL} alt="" style={{width:22,height:22,borderRadius:"50%"}} onError={e=>e.target.style.display="none"}/>}
+          👤 {lang==="en"?"Profile":"פרופיל"}
+        </button>
+        <button onClick={()=>setState(p=>{const n={...p,lang:p.lang==="he"?"en":"he"};saveS(n);return n;})} className="btn" style={{background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.3)",borderRadius:10,padding:"7px 12px",color:"#a5b4fc",fontSize:12,fontWeight:700}}>
+          {lang==="he"?"🇺🇸 EN":"🇮🇱 HE"}
+        </button>
+      </div>
+      <div style={{textAlign:"center",marginBottom:14}}>
+        <div style={{display:"inline-block",animation:"duckIdle 3s ease infinite"}}>
+          <DuckSVG stage={duck} mood="idle" size={duck.size}/>
+        </div>
+        <div style={{fontSize:11,fontWeight:800,color:duck.color,background:`${duck.color}22`,borderRadius:20,padding:"3px 14px",display:"inline-block",marginBottom:8}}>{duck.name}</div>
+        <div style={{fontSize:30,fontWeight:900,lineHeight:1,background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee,#4ade80,#f472b6)",backgroundSize:"300% 300%",animation:"rainbow 5s ease infinite",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>WordMaster Pro</div>
+        <div style={{color:"rgba(255,255,255,0.45)",fontSize:12,marginTop:4}}>🔬 כיול • אופטיקה • אלקטרוניקה • פיזיקה</div>
+      </div>
+      <div style={{background:"rgba(255,255,255,0.06)",borderRadius:16,padding:"12px 14px",border:"1px solid rgba(255,255,255,0.1)",marginBottom:10,animation:"glow 3s ease infinite"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:6,alignItems:"center"}}>
+          <span style={{color:"#fff",fontWeight:900,fontSize:14}}>{level.emoji} {level.name}</span>
+          <span style={{color:level.color,fontSize:13,fontWeight:800}}>{state.xp} XP</span>
+        </div>
+        <div style={{height:8,background:"rgba(255,255,255,0.08)",borderRadius:99,overflow:"hidden"}}>
+          <div style={{height:"100%",width:`${xpPct}%`,background:`linear-gradient(90deg,${level.color}77,${level.color})`,borderRadius:99,transition:"width 0.7s ease"}}/>
+        </div>
+        {nextLevel&&<div style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginTop:4}}>עוד {nextLevel.xp-state.xp} XP → {nextLevel.name}</div>}
+      </div>
+      <div style={{background:"rgba(0,0,0,0.28)",borderRadius:16,padding:"10px 14px",border:"1px solid rgba(255,255,255,0.1)",marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+          <span style={{fontSize:12,fontWeight:800,color:"rgba(255,255,255,0.75)"}}>❤️ {lang==="en"?"Duck Lives":"חיי ברווז"}</span>
+          <span style={{fontSize:12,color:"#4ade80",fontWeight:700}}>{state.lives}/10</span>
+        </div>
+        <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+          {Array.from({length:MAX_LIVES}).map((_,i)=>(
+            <div key={i} style={{width:22,height:22,opacity:i<state.lives?1:0.12,filter:i<state.lives?"none":"grayscale(1)",transition:"all 0.5s"}}>
+              <DuckSVG stage={DUCK_STAGES[0]} mood="idle" size={22}/>
+            </div>
+          ))}
+        </div>
+        {state.resetAt&&state.lives<MAX_LIVES&&<BigTimer resetAt={state.resetAt} lang={lang}/>}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:10}}>
+        {[{l:"✅ נכונות",v:state.correct,c:"#4ade80"},{l:"🔥 רצף",v:state.streak,c:"#f59e0b"},{l:"⭐ שיא",v:state.bestStreak,c:"#a78bfa"}].map(s=>(
+          <div key={s.l} style={{background:"rgba(255,255,255,0.05)",borderRadius:12,padding:"10px 6px",textAlign:"center",border:`1px solid ${s.c}22`}}>
+            <div style={{fontSize:20,fontWeight:900,color:s.c}}>{s.v}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.45)",marginTop:2}}>{s.l}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 14px",border:"1px solid rgba(255,255,255,0.08)",marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+          <span style={{fontSize:12,color:"rgba(255,255,255,0.55)"}}>מילים שנלמדו</span>
+          <span style={{fontSize:12,color:"#22d3ee",fontWeight:800}}>{seen}/{totalWords}</span>
+        </div>
+        <div style={{height:6,background:"rgba(255,255,255,0.07)",borderRadius:99}}>
+          <div style={{height:"100%",width:`${Math.min(100,(seen/Math.max(totalWords,1))*100)}%`,background:"linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6)",borderRadius:99}}/>
+        </div>
+      </div>
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",fontWeight:800,marginBottom:7}}>🎯 {lang==="en"?"Difficulty":"רמת קושי"}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+          {["easy","medium","hard"].map(lvl=>(
+            <button key={lvl} onClick={()=>setState(p=>{const n={...p,selectedLevel:lvl};saveS(n);return n;})} className="btn" style={{padding:"9px 6px",borderRadius:11,fontWeight:800,fontSize:12,background:(state.selectedLevel||"easy")===lvl?(lvl==="easy"?"rgba(74,222,128,0.25)":lvl==="medium"?"rgba(250,204,21,0.25)":"rgba(248,113,113,0.25)"):"rgba(255,255,255,0.04)",border:`2px solid ${(state.selectedLevel||"easy")===lvl?(lvl==="easy"?"#4ade80":lvl==="medium"?"#facc15":"#f87171"):"rgba(255,255,255,0.1)"}`,color:(state.selectedLevel||"easy")===lvl?(lvl==="easy"?"#4ade80":lvl==="medium"?"#facc15":"#f87171"):"rgba(255,255,255,0.5)"}}>
+              {lvlLabel(lvl,lang)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <button onClick={onAddWords} className="btn" style={{width:"100%",background:"rgba(34,211,238,0.1)",border:"1px solid rgba(34,211,238,0.35)",borderRadius:14,padding:"12px 16px",color:"#22d3ee",fontSize:14,fontWeight:800,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        ➕ {lang==="en"?"Add Custom Words":"הוסף מילים ידנית עם AI"}
+        {customWords.length>0&&<span style={{background:"rgba(34,211,238,0.2)",borderRadius:20,padding:"2px 8px",fontSize:12}}>{customWords.length}</span>}
+      </button>
+      <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",fontWeight:800,marginBottom:8}}>📚 {lang==="en"?"Choose Module":"בחר מודול"}</div>
+      <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:12}}>
+        <button onClick={()=>onStart("ALL")} className="btn" style={{background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee,#4ade80)",backgroundSize:"300% 300%",animation:"rainbow 4s ease infinite",borderRadius:14,padding:"14px 16px",color:"#fff",fontSize:14,fontWeight:900,display:"flex",justifyContent:"space-between",boxShadow:"0 4px 24px rgba(167,139,250,0.4)"}}>
+          <span>⚡ {lang==="en"?"All Modules":"כל המודולים"}</span>
+          <span style={{fontSize:11,opacity:0.9}}>{totalWords} {lang==="en"?"words":"מילים"}</span>
+        </button>
+        {customWords.length>0&&(
+          <button onClick={()=>onStart("CUSTOM")} className="btn" style={{background:"rgba(34,211,238,0.08)",border:"1px solid rgba(34,211,238,0.4)",borderRadius:12,padding:"11px 14px",color:"#22d3ee",display:"flex",justifyContent:"space-between",alignItems:"center",fontWeight:700,fontSize:13}}>
+            <span>➕ המילים שהוספתי</span>
+            <span style={{fontSize:11}}>{customWords.length} מילים</span>
+          </button>
+        )}
+        {CATEGORIES.map((cat,idx)=>{
+          const words=ALL_BASE.filter(w=>w.category===cat&&w.level===(state.selectedLevel||"easy"));
+          const catSeen=words.filter(w=>state.seen[w.en]).length;
+          const pct=Math.round((catSeen/Math.max(words.length,1))*100);
+          const col=CAT_COLORS[idx%CAT_COLORS.length];
+          return(
+            <button key={cat} onClick={()=>onStart(cat)} className="btn" style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${col}44`,borderRadius:12,padding:"11px 14px",color:"#e2e8f0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:13,marginBottom:4}}>{cat}</div>
+                <div style={{height:3,background:"rgba(255,255,255,0.06)",borderRadius:99}}>
+                  <div style={{height:"100%",width:`${pct}%`,background:col,borderRadius:99}}/>
+                </div>
+              </div>
+              <div style={{textAlign:"left",marginLeft:10}}>
+                <div style={{fontSize:12,color:col,fontWeight:800}}>{pct}%</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>{catSeen}/{words.length}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <button onClick={onReset} className="btn" style={{width:"100%",padding:"10px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.25)",borderRadius:11,color:"rgba(239,68,68,0.7)",fontSize:12,fontWeight:700}}>
+        ⚠️ {lang==="en"?"Reset Progress":"איפוס התקדמות"}
+      </button>
+    </div>
+  );
+}
+
+function QuizScreen({category,state,setState,onHome,onBack}){
+  const lang=state.lang||"he";
+  const selectedLevel=state.selectedLevel||"easy";
+  const customWords=(state.customWords||[]).map(w=>({...w,level:w.level||"easy"}));
+  const basePool=category==="CUSTOM"?customWords:category==="ALL"?[...ALL_BASE,...customWords]:ALL_BASE.filter(w=>w.category===category&&w.level===selectedLevel);
+  const aiPool=category==="CUSTOM"?[]:(state.aiWords||[]).filter(w=>(category==="ALL"||w.category===category)&&w.level===selectedLevel);
+  const fullPool=[...basePool,...aiPool];
+  const[cKey,setCKey]=useState(0);
+  const[word,setWord]=useState(()=>rnd(fullPool.length?fullPool:ALL_BASE));
+  const[dir,setDir]=useState(()=>Math.random()>0.5?"en2he":"he2en");
+  const[opts,setOpts]=useState([]);
+  const[chosen,setChosen]=useState(null);
+  const[mood,setMood]=useState("idle");
+  const[msg,setMsg]=useState("");
+  const[showExplain,setShowExplain]=useState(false);
+  const[xpPop,setXpPop]=useState(null);
+  const[qNum,setQNum]=useState(1);
+  const[showLevelUp,setShowLevelUp]=useState(false);
+  const[loadingAI,setLoadingAI]=useState(false);
+  const[aiStatus,setAIStatus]=useState("");
+  const prevLevelRef=useRef(getLevel(state.xp).name);
+
+  useEffect(()=>{
+    if(state.resetAt&&Date.now()>=state.resetAt){setState(prev=>{const n={...prev,lives:MAX_LIVES,resetAt:null};saveS(n);return n;});}
+  },[]);
+
+  useEffect(()=>{
+    if(category==="CUSTOM")return;
+    const pool2=[...basePool,...(state.aiWords||[]).filter(w=>(category==="ALL"||w.category===category)&&w.level===selectedLevel)];
+    if(pool2.filter(w=>!state.seen[w.en]).length<8&&!loadingAI){
+      setLoadingAI(true);setAIStatus("🤖 טוען מילים חדשות...");
+      const cat=category==="ALL"?rnd(CATEGORIES):category;
+      const levelDesc=selectedLevel==="easy"?"basic and simple":selectedLevel==="medium"?"intermediate":"advanced and complex";
+      callGemini(`Create 15 new ${levelDesc} technical words for category "${cat}". Don't repeat: ${pool2.map(w=>w.en).slice(0,20).join(", ")}. Return JSON only: [{"en":"Word","he":"מילה","tip":"short tip in Hebrew"}]`)
+        .then(text=>{
+          const arr=JSON.parse(text.replace(/```json|```/g,"").trim());
+          const newWords=arr.map(w=>({...w,category:cat,level:selectedLevel,fromAI:true}));
+          setState(prev=>{const n={...prev,aiWords:[...(prev.aiWords||[]),...newWords]};saveS(n);return n;});
+          setAIStatus(`✅ נוספו ${newWords.length} מילים!`);setTimeout(()=>setAIStatus(""),3000);
+        })
+        .catch(()=>setAIStatus("")).finally(()=>setLoadingAI(false));
+    }
+  },[state.seen]);
+
+  useEffect(()=>{
+    const k=dir==="en2he"?"he":"en";
+    if(word.wrongHe&&word.wrongEn){
+      const wrongOpts=dir==="en2he"?(word.wrongHe||[]):(word.wrongEn||[]);
+      setOpts(shuffle([word[k],...wrongOpts.slice(0,3)]));
+    }else{
+      const pool2=[...basePool,...(state.aiWords||[]).filter(w=>(category==="ALL"||w.category===category))];
+      const others=pool2.filter(w=>w[k]!==word[k]);
+      setOpts(shuffle([word[k],...shuffle(others.length>=3?others:ALL_BASE.filter(w=>w[k]!==word[k])).slice(0,3).map(w=>w[k])]));
+    }
+    setChosen(null);setMood("idle");setMsg("");
+  },[cKey]);
+
+  if(state.lives<=0&&state.resetAt&&Date.now()<state.resetAt)return<NoLivesScreen state={state} onHome={onHome} lang={lang}/>;
+
+  const correct=dir==="en2he"?word.he:word.en;
+  const question=dir==="en2he"?word.en:word.he;
+  const ansDir=dir==="en2he"?"rtl":"ltr";
+  const duck=getDuck(state.correct);
+  const level=getLevel(state.xp);
+  const acc=state.total>0?Math.round((state.correct/state.total)*100):0;
+  const isOk=chosen===correct;
+  const duckAnim=showLevelUp?"levelUp 1s ease":mood==="happy"?"duckHappy 0.5s ease 4":mood==="angry"?"duckAngry 0.3s ease 5":"duckIdle 3s ease infinite";
+
+  function handleAnswer(opt){
+    if(chosen!==null)return;
+    setChosen(opt);
+    const ok=opt===correct;
+    const base=selectedLevel==="hard"?25:selectedLevel==="medium"?15:10;
+    const xpGain=ok?Math.round(base*(state.streak>=4?2:state.streak>=2?1.5:1)):0;
+    setState(prev=>{
+      const newXP=prev.xp+xpGain;
+      const newLives=ok?prev.lives:Math.max(0,prev.lives-1);
+      if(getLevel(newXP).name!==prevLevelRef.current){prevLevelRef.current=getLevel(newXP).name;setTimeout(()=>{setShowLevelUp(true);setTimeout(()=>setShowLevelUp(false),1500);},400);}
+      const newResetAt=newLives===0&&!prev.resetAt?Date.now()+RESET_MS:prev.resetAt;
+      const n={...prev,total:prev.total+1,correct:prev.correct+(ok?1:0),streak:ok?prev.streak+1:0,bestStreak:ok?Math.max(prev.bestStreak,prev.streak+1):prev.bestStreak,xp:newXP,lives:newLives,resetAt:newResetAt,seen:ok?{...prev.seen,[word.en]:true}:prev.seen};
+      saveS(n);return n;
+    });
+    if(ok){setMood("happy");setMsg(rnd(RIGHT_MSGS));setXpPop(`+${xpGain} XP`);setTimeout(()=>setXpPop(null),1600);}
+    else{setMood("angry");setMsg(rnd(WRONG_MSGS));}
+  }
+
+  function next(){
+    const src=fullPool.length?fullPool:ALL_BASE;
+    const unseen=src.filter(w=>!state.seen[w.en]);
+    let w;do{w=rnd(unseen.length>2?unseen:src);}while(w.en===word.en&&src.length>1);
+    setWord(w);setDir(Math.random()>0.5?"en2he":"he2en");setCKey(k=>k+1);setQNum(q=>q+1);
+  }
+
+  return(
+    <div style={{padding:"12px",maxWidth:460,margin:"0 auto"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={onHome} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",color:"#94a3b8",borderRadius:9,padding:"6px 11px",fontSize:16}}>🏠</button>
+          <button onClick={onBack} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",color:"#94a3b8",borderRadius:9,padding:"6px 11px",fontSize:13,fontWeight:700}}>←</button>
+        </div>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:11,color:level.color,fontWeight:900}}>{level.emoji} {level.name} • {lvlLabel(selectedLevel,lang)}</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>שאלה #{qNum}</div>
+        </div>
+        <div style={{textAlign:"left"}}>
+          <div style={{fontSize:13,color:"#f59e0b",fontWeight:900}}>🔥 {state.streak}</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>{acc}%</div>
+        </div>
+      </div>
+      {aiStatus&&<div style={{background:"rgba(167,139,250,0.15)",border:"1px solid rgba(167,139,250,0.3)",borderRadius:10,padding:"7px 12px",marginBottom:8,fontSize:11,color:"#a78bfa",textAlign:"center",fontWeight:600}}>{aiStatus}</div>}
+      <div style={{display:"flex",gap:3,justifyContent:"center",marginBottom:10,background:"rgba(0,0,0,0.22)",borderRadius:12,padding:"7px 12px",border:"1px solid rgba(255,255,255,0.08)"}}>
+        {Array.from({length:MAX_LIVES}).map((_,i)=>(
+          <div key={i} style={{width:20,height:20,opacity:i<state.lives?1:0.12,filter:i<state.lives?"none":"grayscale(1)",transition:"all 0.5s"}}>
+            <DuckSVG stage={DUCK_STAGES[0]} mood="idle" size={20}/>
+          </div>
+        ))}
+      </div>
+      <div style={{textAlign:"center",marginBottom:8,position:"relative",minHeight:duck.size+30}}>
+        <div style={{display:"inline-block",animation:duckAnim}}>
+          <DuckSVG stage={duck} mood={mood} size={duck.size}/>
+        </div>
+        {xpPop&&<div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",fontSize:20,fontWeight:900,color:"#4ade80",animation:"xpFloat 1.6s ease forwards",pointerEvents:"none"}}>{xpPop}</div>}
+        {msg&&<div style={{fontSize:13,fontWeight:700,color:isOk||!chosen?"#4ade80":"#f87171",marginTop:2,animation:"fadeIn 0.3s ease"}}>{msg}</div>}
+        {chosen&&<div style={{fontSize:10,color:duck.color,background:`${duck.color}20`,borderRadius:20,padding:"2px 10px",display:"inline-block",marginTop:3}}>{duck.name}</div>}
+      </div>
+      <div key={cKey} style={{background:"rgba(255,255,255,0.05)",borderRadius:18,padding:"16px",marginBottom:12,textAlign:"center",border:"1px solid rgba(255,255,255,0.1)",animation:"slideUp 0.35s ease"}}>
+        {word.fromCustom&&<div style={{fontSize:9,color:"#22d3ee",fontWeight:700,marginBottom:4}}>➕ מילה שהוספת</div>}
+        {word.fromAI&&<div style={{fontSize:9,color:"#a78bfa",fontWeight:700,marginBottom:4}}>🤖 AI</div>}
+        <div style={{fontSize:10,color:"rgba(255,255,255,0.38)",letterSpacing:2,marginBottom:8,fontWeight:700}}>{dir==="en2he"?"🇺🇸 תרגם לעברית":"🇮🇱 תרגם לאנגלית"}</div>
+        <div style={{fontSize:28,fontWeight:900,color:"#fff",direction:dir==="he2en"?"rtl":"ltr",marginBottom:6}}>{question}</div>
+        <div style={{fontSize:11,color:"#818cf8",lineHeight:1.5}}>💡 {word.tip}</div>
+        <div style={{fontSize:10,color:"rgba(255,255,255,0.2)",marginTop:4}}>{word.category} • {lvlLabel(word.level||selectedLevel,lang)}</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
+        {opts.map((opt,i)=>{
+          let bg="rgba(255,255,255,0.05)",border="rgba(255,255,255,0.12)",color="#e2e8f0",shadow="none";
+          if(chosen!==null){
+            if(opt===correct){bg="rgba(74,222,128,0.15)";border="#4ade80";color="#4ade80";shadow="0 0 20px rgba(74,222,128,0.3)";}
+            else if(opt===chosen){bg="rgba(248,113,113,0.15)";border="#f87171";color="#f87171";shadow="0 0 16px rgba(248,113,113,0.2)";}
+            else{bg="rgba(255,255,255,0.02)";border="rgba(255,255,255,0.04)";color="rgba(255,255,255,0.2)";}
+          }
+          return(
+            <button key={i} onClick={()=>handleAnswer(opt)} disabled={chosen!==null} className="btn" style={{background:bg,border:`2px solid ${border}`,borderRadius:13,padding:"13px 14px",color,fontSize:14,fontWeight:700,direction:ansDir,textAlign:"center",boxShadow:shadow,transition:"all 0.3s"}}>
+              {chosen!==null&&opt===correct&&"✅ "}{chosen!==null&&opt===chosen&&opt!==correct&&"❌ "}{opt}
+            </button>
+          );
+        })}
+      </div>
+      {chosen!==null&&!isOk&&(
+        <div style={{background:"rgba(248,113,113,0.08)",border:"1px solid rgba(248,113,113,0.25)",borderRadius:13,padding:"12px 14px",marginBottom:10,animation:"fadeIn 0.3s ease"}}>
+          <div style={{fontSize:11,color:"#f87171",fontWeight:800,marginBottom:4}}>התשובה הנכונה:</div>
+          <div style={{fontSize:17,fontWeight:900,color:"#fff",direction:ansDir}}>{correct}</div>
+          <div style={{fontSize:11,color:"#94a3b8",marginTop:3}}>{word.tip}</div>
+        </div>
+      )}
+      {chosen!==null&&(
+        <div style={{display:"flex",gap:8,animation:"fadeIn 0.3s ease"}}>
+          <button onClick={()=>setShowExplain(true)} className="btn" style={{flex:1,background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.4)",borderRadius:12,padding:"12px 8px",color:"#a5b4fc",fontSize:13,fontWeight:700}}>🤖 {lang==="en"?"Explain":"הסבר"}</button>
+          <button onClick={next} className="btn" style={{flex:2,background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee)",backgroundSize:"200%",animation:"rainbow 3s ease infinite",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:15,fontWeight:900,boxShadow:"0 4px 20px rgba(244,114,182,0.4)"}}>
+            {lang==="en"?"Next →":"המשך ←"}
+          </button>
+        </div>
+      )}
+      {showExplain&&<ExplainModal word={word} onClose={()=>setShowExplain(false)} lang={lang}/>}
+    </div>
+  );
+}
+
+export default function App(){
+  const[user,setUser]=useState(null);
+  const[authLoading,setAuthLoading]=useState(true);
+  const[state,setState]=useState(()=>loadS()||initS());
+  const[screen,setScreen]=useState("home");
+  const[category,setCategory]=useState(null);
+  const lang=state.lang||"he";
+
+  useEffect(()=>{
+    const unsub=onAuthStateChanged(auth,u=>{setUser(u);setAuthLoading(false);});
+    return unsub;
+  },[]);
+
+  const bgMap={
+    "מתחיל":"linear-gradient(160deg,#0f2027,#203a43,#2c5364)",
+    "חוקר":"linear-gradient(160deg,#0f0c29,#302b63,#24243e)",
+    "מפתח":"linear-gradient(160deg,#1a0533,#2d1b69,#0e7f70)",
+    "מומחה":"linear-gradient(160deg,#0d0d0d,#3a1c71,#b45309)",
+    "מאסטר":"linear-gradient(160deg,#200122,#6f0000,#200122)",
+  };
+  const lv=getLevel(state.xp);
+
+  if(authLoading){
+    return(
+      <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0f0c29"}}>
+        <style>{CSS}</style>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:60,animation:"spin 1s linear infinite",display:"inline-block"}}>⚙️</div>
+          <div style={{color:"#a78bfa",marginTop:12,fontSize:14}}>WordMaster Pro טוען...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if(!user)return<LoginScreen onLogin={u=>setUser(u)}/>;
+
+  return(
+    <div style={{minHeight:"100vh",background:bgMap[lv.name]||bgMap["מתחיל"],transition:"background 1.2s ease",fontFamily:"'Heebo',sans-serif",direction:lang==="he"?"rtl":"ltr",color:"#fff",overflowX:"hidden"}}>
+      <style>{CSS}</style>
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",opacity:0.04,backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.9) 1px,transparent 1px)",backgroundSize:"28px 28px"}}/>
+      {screen==="home"&&<HomeScreen user={user} state={state} setState={setState} onStart={cat=>{setCategory(cat);setScreen("quiz");}} onProfile={()=>setScreen("profile")} onAddWords={()=>setScreen("addwords")} onReset={()=>{if(window.confirm(lang==="en"?"Delete all progress?":"למחוק הכל?")){const f=initS();setState(f);saveS(f);}}}/>}
+      {screen==="quiz"&&<QuizScreen category={category} state={state} setState={setState} onHome={()=>setScreen("home")} onBack={()=>setScreen("home")}/>}
+      {screen==="profile"&&<ProfileScreen user={user} state={state} setState={setState} onBack={()=>setScreen("home")} onLogout={async()=>{await signOut(auth);setUser(null);setScreen("home");}}/>}
+      {screen==="addwords"&&<AddWordsScreen state={state} setState={setState} onBack={()=>setScreen("home")}/>}
+    </div>
+  );
+}
