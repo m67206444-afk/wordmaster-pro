@@ -225,6 +225,44 @@ const BASE_WORDS = {
       {en:"Aberration Theory",he:"תורת הסטיות",tip:"ניתוח שגיאות אופטיות"},
     ]
   },
+  "💬 תכנות באנגלית": {
+    easy: [
+      {en:"Open the terminal",he:"פתח את הטרמינל",tip:"Command line interface"},
+      {en:"Save the file",he:"שמור את הקובץ",tip:"Ctrl+S shortcut"},
+      {en:"Run the code",he:"הרץ את הקוד",tip:"Execute the program"},
+      {en:"Fix the bug",he:"תקן את הבאג",tip:"Debug the error"},
+      {en:"Push to GitHub",he:"דחוף לגיטהאב",tip:"git push command"},
+      {en:"Clone the repo",he:"שכפל את המאגר",tip:"git clone command"},
+      {en:"Install the package",he:"התקן את החבילה",tip:"npm install"},
+      {en:"Check the logs",he:"בדוק את הלוגים",tip:"View error messages"},
+      {en:"Write a function",he:"כתוב פונקציה",tip:"Define reusable code"},
+      {en:"Print the output",he:"הדפס את הפלט",tip:"console.log()"},
+    ],
+    medium: [
+      {en:"Deploy to production",he:"פרס לסביבת ייצור",tip:"Release to live server"},
+      {en:"Merge the pull request",he:"מזג את בקשת המשיכה",tip:"Combine code branches"},
+      {en:"Set environment variables",he:"הגדר משתני סביבה",tip:".env file settings"},
+      {en:"Refactor the legacy code",he:"שפץ את הקוד הישן",tip:"Improve without changing behavior"},
+      {en:"Write unit tests",he:"כתוב בדיקות יחידה",tip:"Test individual components"},
+      {en:"Review the code changes",he:"סקור את שינויי הקוד",tip:"Code review process"},
+      {en:"Handle the edge cases",he:"טפל במקרי קצה",tip:"Unexpected input handling"},
+      {en:"Optimize the database query",he:"שפר את שאילתת ה-DB",tip:"Improve query performance"},
+      {en:"Set up the CI pipeline",he:"הגדר את צינור ה-CI",tip:"Continuous integration"},
+      {en:"Debug the memory leak",he:"אבחן את דליפת הזיכרון",tip:"Find memory issues"},
+    ],
+    hard: [
+      {en:"Implement the singleton pattern",he:"ממש את תבנית הסינגלטון",tip:"One instance design pattern"},
+      {en:"Handle race conditions",he:"טפל בתנאי מרוץ",tip:"Concurrent access issues"},
+      {en:"Inject the dependencies",he:"הזרק את התלויות",tip:"Dependency injection pattern"},
+      {en:"Profile the CPU bottleneck",he:"פרופיל את צוואר הבקבוק",tip:"Performance profiling"},
+      {en:"Migrate the database schema",he:"העבר את סכמת הנתונים",tip:"Database migration"},
+      {en:"Implement the observer pattern",he:"ממש את תבנית המשקיף",tip:"Event-driven design"},
+      {en:"Resolve the merge conflict",he:"פתור את קונפליקט המיזוג",tip:"Git merge conflict"},
+      {en:"Containerize the application",he:"הכנס לקונטיינר את האפליקציה",tip:"Docker containerization"},
+      {en:"Scale the microservices",he:"קנה מידה למיקרו-שירותים",tip:"Horizontal scaling"},
+      {en:"Implement rate limiting",he:"ממש הגבלת קצב",tip:"API rate limiting"},
+    ]
+  },
 };
 
 const CATEGORIES=Object.keys(BASE_WORDS);
@@ -855,10 +893,13 @@ function QuizScreen({category,state,setState,onHome,onBack}){
   const[loadingAI,setLoadingAI]=useState(false);
   const[aiStatus,setAIStatus]=useState("");
   const[timeLeft,setTimeLeft]=useState(null);
+  const[listening,setListening]=useState(false);
+  const[spellResult,setSpellResult]=useState("");
   const timerRef=useRef(null);
+  const recRef=useRef(null);
   const prevLevelRef=useRef(getLevel(state.xp).name);
 
-  const timerSecs=Math.min(12,3+Math.floor((qNum-1)/3));
+  const timerSecs=Math.min(15,5+Math.floor((qNum-1)/3));
 
   useEffect(()=>{
     if(state.resetAt&&Date.now()>=state.resetAt){setState(prev=>{const n={...prev,lives:MAX_LIVES,resetAt:null};saveS(n);return n;});}
@@ -944,7 +985,40 @@ function QuizScreen({category,state,setState,onHome,onBack}){
     else{setMood("angry");setMsg(rnd(WRONG_MSGS));}
   }
 
-  function next(){
+  function speak(text){
+    if(!('speechSynthesis' in window))return;
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='en-US';u.rate=0.85;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  }
+
+  function startListening(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){setSpellResult("❌ הדפדפן לא תומך בזיהוי קול");return;}
+    if(listening){recRef.current?.stop();setListening(false);return;}
+    const rec=new SR();
+    recRef.current=rec;
+    rec.lang='en-US';rec.interimResults=false;
+    rec.onresult=(e)=>{
+      const heard=e.results[0][0].transcript.toLowerCase().trim();
+      const target=word.en.toLowerCase().trim();
+      const ok=heard===target||heard.replace(/\s+/g,'')===target.replace(/\s+/g,'');
+      setSpellResult(ok?"✅ "+heard:"❌ שמעתי: "+heard);
+      setListening(false);
+    };
+    rec.onend=()=>setListening(false);
+    rec.onerror=()=>{setListening(false);setSpellResult("❌ שגיאה בהקלטה");};
+    rec.start();setListening(true);setSpellResult("");
+  }
+
+  function next(speedBonus=0){
+    if(speedBonus>0){
+      setState(prev=>{const n={...prev,xp:prev.xp+speedBonus};saveS(n);return n;});
+      setXpPop(`⚡+${speedBonus}`);setTimeout(()=>setXpPop(null),1600);
+    }
+    setSpellResult("");setListening(false);
+    if(recRef.current)try{recRef.current.stop();}catch{}
     const src=fullPool.length?fullPool:ALL_BASE;
     const unseen=src.filter(w=>!state.seen[w.en]);
     let w;do{w=rnd(unseen.length>2?unseen:src);}while(w.en===word.en&&src.length>1);
@@ -960,7 +1034,7 @@ function QuizScreen({category,state,setState,onHome,onBack}){
         </div>
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:11,color:level.color,fontWeight:900}}>{level.emoji} {level.name} • {lvlLabel(selectedLevel,lang)}</div>
-          <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>שאלה #{qNum} • ⏱{timerSecs}שנ</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>שאלה #{qNum} • ⏱{timerSecs}שנ • בונוס מהירות ⚡</div>
         </div>
         <div style={{textAlign:"left"}}>
           <div style={{fontSize:13,color:"#f59e0b",fontWeight:900}}>🔥 {state.streak}</div>
@@ -989,7 +1063,14 @@ function QuizScreen({category,state,setState,onHome,onBack}){
         <div style={{fontSize:10,color:"rgba(255,255,255,0.38)",letterSpacing:2,marginBottom:8,fontWeight:700}}>{dir==="en2he"?"🇺🇸 תרגם לעברית":"🇮🇱 תרגם לאנגלית"}</div>
         <div style={{fontSize:28,fontWeight:900,color:"#fff",direction:dir==="he2en"?"rtl":"ltr",marginBottom:6}}>{question}</div>
         <div style={{fontSize:11,color:"#818cf8",lineHeight:1.5}}>💡 {word.tip}</div>
-        <div style={{fontSize:10,color:"rgba(255,255,255,0.2)",marginTop:4}}>{word.category} • {lvlLabel(word.level||selectedLevel,lang)}</div>
+        <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:10}}>
+          <button onClick={()=>speak(word.en)} className="btn" style={{background:"rgba(34,211,238,0.12)",border:"1px solid rgba(34,211,238,0.35)",borderRadius:20,padding:"5px 16px",color:"#22d3ee",fontSize:12,fontWeight:700}}>🔊 שמע</button>
+          <button onClick={startListening} className="btn" style={{background:listening?"rgba(239,68,68,0.15)":"rgba(167,139,250,0.12)",border:`1px solid ${listening?"rgba(239,68,68,0.4)":"rgba(167,139,250,0.35)"}`,borderRadius:20,padding:"5px 16px",color:listening?"#f87171":"#a78bfa",fontSize:12,fontWeight:700}}>
+            {listening?"⏹ עצור":"🎤 איית"}
+          </button>
+        </div>
+        {spellResult&&<div style={{fontSize:12,color:spellResult.startsWith("✅")?"#4ade80":"#f87171",textAlign:"center",marginTop:6,fontWeight:700}}>{spellResult}</div>}
+        <div style={{fontSize:10,color:"rgba(255,255,255,0.2)",marginTop:6}}>{word.category} • {lvlLabel(word.level||selectedLevel,lang)}</div>
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
         {opts.map((opt,i)=>{
@@ -1028,8 +1109,9 @@ function QuizScreen({category,state,setState,onHome,onBack}){
           )}
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>setShowExplain(true)} className="btn" style={{flex:1,background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.4)",borderRadius:12,padding:"12px 8px",color:"#a5b4fc",fontSize:13,fontWeight:700}}>🤖 {lang==="en"?"Explain":"הסבר"}</button>
-            <button onClick={next} className="btn" style={{flex:2,background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee)",backgroundSize:"200%",animation:"rainbow 3s ease infinite",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:15,fontWeight:900,boxShadow:"0 4px 20px rgba(244,114,182,0.4)"}}>
-              {lang==="en"?"Next →":"המשך ←"}
+            <button onClick={()=>next(timeLeft&&timeLeft>0?Math.round((timeLeft/timerSecs)*10):0)} className="btn" style={{flex:2,background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee)",backgroundSize:"200%",animation:"rainbow 3s ease infinite",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:15,fontWeight:900,boxShadow:"0 4px 20px rgba(244,114,182,0.4)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              <span>{lang==="en"?"Next →":"המשך ←"}</span>
+              {timeLeft&&timeLeft>0?<span style={{fontSize:11,background:"rgba(255,255,255,0.2)",borderRadius:10,padding:"1px 7px"}}>⚡+{Math.round((timeLeft/timerSecs)*10)}</span>:null}
             </button>
           </div>
         </div>
