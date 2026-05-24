@@ -17,9 +17,11 @@ const auth = getAuth(app);
 setPersistence(auth, browserLocalPersistence).catch(()=>{});
 const provider = new GoogleAuthProvider();
 
-async function callGemini(prompt) {
+async function callGemini(prompt, apiKey) {
+  const key = apiKey || GEMINI_KEY;
+  if (!key) throw new Error("מפתח Gemini AI חסר — הגדר אותו בפרופיל ⚙️");
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -32,6 +34,36 @@ async function callGemini(prompt) {
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
+function playSound(type){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const master=ctx.createGain();
+    master.connect(ctx.destination);
+    if(type==="correct"){
+      [[523,0],[659,0.12],[784,0.24],[1047,0.38]].forEach(([freq,delay])=>{
+        const osc=ctx.createOscillator();
+        const g=ctx.createGain();
+        osc.connect(g);g.connect(master);
+        osc.type="sine";osc.frequency.setValueAtTime(freq,ctx.currentTime+delay);
+        g.gain.setValueAtTime(0,ctx.currentTime+delay);
+        g.gain.linearRampToValueAtTime(0.22,ctx.currentTime+delay+0.04);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+delay+0.22);
+        osc.start(ctx.currentTime+delay);osc.stop(ctx.currentTime+delay+0.25);
+      });
+    }else{
+      const osc=ctx.createOscillator();
+      const g=ctx.createGain();
+      osc.connect(g);g.connect(master);
+      osc.type="sawtooth";
+      osc.frequency.setValueAtTime(320,ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(80,ctx.currentTime+0.35);
+      g.gain.setValueAtTime(0.2,ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
+      osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.4);
+    }
+  }catch{}
 }
 
 const BASE_WORDS = {
@@ -292,7 +324,7 @@ const RIGHT_MSGS=["מעולה! הברווז קופץ! 🎉","נכון! הברו�
 const KEY="wmp_v_final";
 function loadS(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch{return null;}}
 function saveS(s){try{localStorage.setItem(KEY,JSON.stringify(s));}catch{}}
-function initS(){return{xp:0,correct:0,total:0,streak:0,bestStreak:0,lives:MAX_LIVES,resetAt:null,seen:{},aiWords:[],customWords:[],selectedLevel:"easy",lang:"he",knownWords:[],noteWords:[],dayStreak:0,weekStreak:0,monthStreak:0,lastPlayDate:null,lastPlayWeek:null,lastPlayMonth:null};}
+function initS(){return{xp:0,correct:0,total:0,streak:0,bestStreak:0,lives:MAX_LIVES,resetAt:null,seen:{},aiWords:[],customWords:[],selectedLevel:"easy",lang:"he",knownWords:[],noteWords:[],dayStreak:0,weekStreak:0,monthStreak:0,lastPlayDate:null,lastPlayWeek:null,lastPlayMonth:null,geminiKey:"",voiceGender:"female"};}
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 function rnd(a){return a[Math.floor(Math.random()*a.length)];}
 function getLevel(xp){return[...LEVELS_XP].reverse().find(l=>xp>=l.xp)||LEVELS_XP[0];}
@@ -433,7 +465,7 @@ function AddWordsScreen({state,setState,onBack}){
     if(!enWord.trim()&&!heWord.trim()){setStatus("⚠️ הכנס לפחות מילה אחת");return;}
     setLoading(true);setStatus("🤖 AI בונה שאלות...");setPreview(null);
     try{
-      const text=await callGemini(`You are a technical vocabulary expert. For the word: English="${enWord||"?"}", Hebrew="${heWord||"?"}". Category: "${category}", Level: "${level}". Generate: {"en":"correct english","he":"תרגום עברי","tip":"טיפ קצר בעברית","wrongHe":["שגוי1","שגוי2","שגוי3"],"wrongEn":["wrong1","wrong2","wrong3"]}. Return JSON only.`);
+      const text=await callGemini(`You are a technical vocabulary expert. For the word: English="${enWord||"?"}", Hebrew="${heWord||"?"}". Category: "${category}", Level: "${level}". Generate: {"en":"correct english","he":"תרגום עברי","tip":"טיפ קצר בעברית","wrongHe":["שגוי1","שגוי2","שגוי3"],"wrongEn":["wrong1","wrong2","wrong3"]}. Return JSON only.`, state.geminiKey);
       const result=JSON.parse(text.replace(/```json|```/g,"").trim());
       setPreview(result);setStatus("✅ AI הכין שאלה! בדוק ואשר:");
     }catch(e){setStatus("❌ שגיאה: "+e.message);}
@@ -683,6 +715,30 @@ function ProfileScreen({user,state,setState,onBack,onLogout}){
           ))}
         </div>
       </div>
+      <div style={{background:"rgba(255,255,255,0.04)",borderRadius:16,padding:16,border:"1px solid rgba(34,211,238,0.2)",marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>🔊 קול הקראה (TTS)</div>
+        <div style={{display:"flex",gap:8}}>
+          {[{v:"female",l:"👩 קול אישה"},{v:"male",l:"👨 קול גבר"}].map(({v,l})=>(
+            <button key={v} onClick={()=>setState(p=>{const n={...p,voiceGender:v};saveS(n);return n;})} className="btn" style={{flex:1,padding:"10px",borderRadius:12,fontWeight:800,fontSize:13,background:(state.voiceGender||"female")===v?"rgba(34,211,238,0.2)":"rgba(255,255,255,0.04)",border:`2px solid ${(state.voiceGender||"female")===v?"#22d3ee":"rgba(255,255,255,0.1)"}`,color:(state.voiceGender||"female")===v?"#22d3ee":"rgba(255,255,255,0.5)"}}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{background:"rgba(255,255,255,0.04)",borderRadius:16,padding:16,border:"1px solid rgba(167,139,250,0.2)",marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:4}}>🤖 Gemini AI — מפתח API</div>
+        <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",marginBottom:10}}>ניתן לקבל מפתח חינמי ב-aistudio.google.com</div>
+        <input
+          type="password"
+          value={state.geminiKey||""}
+          onChange={e=>setState(p=>{const n={...p,geminiKey:e.target.value};saveS(n);return n;})}
+          placeholder="הדבק כאן את המפתח שלך (AIza...)"
+          style={{width:"100%",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(167,139,250,0.3)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none",direction:"ltr",fontFamily:"monospace",marginBottom:6}}
+        />
+        {state.geminiKey&&<div style={{fontSize:11,color:"#4ade80",fontWeight:700}}>✅ מפתח מוגדר ({state.geminiKey.slice(0,8)}...)</div>}
+        {!state.geminiKey&&!GEMINI_KEY&&<div style={{fontSize:11,color:"#f87171",fontWeight:700}}>⚠️ אין מפתח — AI לא יעבוד</div>}
+        {!state.geminiKey&&GEMINI_KEY&&<div style={{fontSize:11,color:"#4ade80",fontWeight:700}}>✅ מפתח מוגדר מהשרת</div>}
+      </div>
       <button onClick={onLogout} className="btn" style={{width:"100%",padding:"12px",background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:12,color:"#f87171",fontSize:14,fontWeight:700}}>
         🚪 {lang==="en"?"Sign Out":"התנתק"}
       </button>
@@ -690,14 +746,14 @@ function ProfileScreen({user,state,setState,onBack,onLogout}){
   );
 }
 
-function ExplainModal({word,onClose,lang}){
+function ExplainModal({word,onClose,lang,geminiKey}){
   const[text,setText]=useState("");
   const[loading,setLoading]=useState(true);
   const[error,setError]=useState("");
   useEffect(()=>{
     let gone=false;
     const prompt=lang==="en"?`Explain the technical term "${word.en}" (Hebrew: "${word.he}") from "${word.category}". Include: 1.📖 Definition 2.💡 Example 3.🧠 Memory trick 4.🔗 Related terms. Be friendly, use emojis.`:`הסבר את המילה הטכנית "${word.en}" (עברית: "${word.he}") מהתחום "${word.category}". כלול: 1.📖 הגדרה פשוטה 2.💡 דוגמה מעשית 3.🧠 טריק לזכור 4.🔗 מילים קשורות. דבר בחום עם אמוגיים.`;
-    callGemini(prompt).then(t=>{if(!gone)setText(t);}).catch(e=>{if(!gone)setError("שגיאה: "+e.message);}).finally(()=>{if(!gone)setLoading(false);});
+    callGemini(prompt, geminiKey).then(t=>{if(!gone)setText(t);}).catch(e=>{if(!gone)setError("שגיאה: "+e.message);}).finally(()=>{if(!gone)setLoading(false);});
     return()=>{gone=true;};
   },[word.en]);
   return(
@@ -912,7 +968,7 @@ function QuizScreen({category,state,setState,onHome,onBack}){
       setLoadingAI(true);setAIStatus("🤖 טוען מילים חדשות...");
       const cat=category==="ALL"?rnd(CATEGORIES):category;
       const levelDesc=selectedLevel==="easy"?"basic and simple":selectedLevel==="medium"?"intermediate":"advanced and complex";
-      callGemini(`Create 15 new ${levelDesc} technical words for category "${cat}". Don't repeat: ${pool2.map(w=>w.en).slice(0,20).join(", ")}. Return JSON only: [{"en":"Word","he":"מילה","tip":"short tip in Hebrew"}]`)
+      callGemini(`Create 15 new ${levelDesc} technical words for category "${cat}". Don't repeat: ${pool2.map(w=>w.en).slice(0,20).join(", ")}. Return JSON only: [{"en":"Word","he":"מילה","tip":"short tip in Hebrew"}]`, state.geminiKey)
         .then(text=>{
           const arr=JSON.parse(text.replace(/```json|```/g,"").trim());
           const newWords=arr.map(w=>({...w,category:cat,level:selectedLevel,fromAI:true}));
@@ -981,6 +1037,7 @@ function QuizScreen({category,state,setState,onHome,onBack}){
       const n={...prev,total:prev.total+1,correct:prev.correct+(ok?1:0),streak:ok?prev.streak+1:0,bestStreak:ok?Math.max(prev.bestStreak,prev.streak+1):prev.bestStreak,xp:newXP,lives:newLives,resetAt:newResetAt,seen:ok?{...prev.seen,[word.en]:true}:prev.seen,knownWords:newKnownWords,...streakUpdate};
       saveS(n);return n;
     });
+    playSound(ok?"correct":"wrong");
     if(ok){setMood("happy");setMsg(rnd(RIGHT_MSGS));setXpPop(`+${xpGain} XP`);setTimeout(()=>setXpPop(null),1600);}
     else{setMood("angry");setMsg(rnd(WRONG_MSGS));}
   }
@@ -989,6 +1046,16 @@ function QuizScreen({category,state,setState,onHome,onBack}){
     if(!('speechSynthesis' in window))return;
     const u=new SpeechSynthesisUtterance(text);
     u.lang='en-US';u.rate=0.85;
+    const voices=window.speechSynthesis.getVoices();
+    const enVoices=voices.filter(v=>v.lang.startsWith('en'));
+    if(enVoices.length>0){
+      const pref=state.voiceGender||"female";
+      const femaleHints=['samantha','karen','victoria','moira','fiona','tessa','zira','hazel','susan','sarah','female','woman'];
+      const maleHints=['alex','daniel','fred','gordon','lee','rishi','thomas','george','male','man'];
+      const hints=pref==="male"?maleHints:femaleHints;
+      const picked=enVoices.find(v=>hints.some(h=>v.name.toLowerCase().includes(h)))||enVoices[0];
+      if(picked)u.voice=picked;
+    }
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(u);
   }
@@ -1116,7 +1183,7 @@ function QuizScreen({category,state,setState,onHome,onBack}){
           </div>
         </div>
       )}
-      {showExplain&&<ExplainModal word={word} onClose={()=>setShowExplain(false)} lang={lang}/>}
+      {showExplain&&<ExplainModal word={word} onClose={()=>setShowExplain(false)} lang={lang} geminiKey={state.geminiKey}/>}
     </div>
   );
 }
