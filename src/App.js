@@ -36,6 +36,23 @@ async function callGemini(prompt, apiKey) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
+async function callGeminiPremium(prompt, token) {
+  const res = await fetch("/.netlify/functions/gemini", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, token })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "שגיאת שרת");
+  return data.text;
+}
+
+async function callAI(prompt, geminiKey, plan, aiCredits) {
+  if (geminiKey) return callGemini(prompt, geminiKey);
+  if (plan === "premium" && aiCredits > 0) return callGeminiPremium(prompt, process.env.REACT_APP_PREMIUM_TOKEN||"");
+  throw new Error("NO_KEY");
+}
+
 function playSound(type){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -324,7 +341,7 @@ const RIGHT_MSGS=["מעולה! הברווז קופץ! 🎉","נכון! הברו�
 const KEY="wmp_v_final";
 function loadS(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch{return null;}}
 function saveS(s){try{localStorage.setItem(KEY,JSON.stringify(s));}catch{}}
-function initS(){return{xp:0,correct:0,total:0,streak:0,bestStreak:0,lives:MAX_LIVES,resetAt:null,seen:{},aiWords:[],customWords:[],selectedLevel:"easy",lang:"he",knownWords:[],noteWords:[],dayStreak:0,weekStreak:0,monthStreak:0,lastPlayDate:null,lastPlayWeek:null,lastPlayMonth:null,geminiKey:"",voiceGender:"female"};}
+function initS(){return{xp:0,correct:0,total:0,streak:0,bestStreak:0,lives:MAX_LIVES,resetAt:null,seen:{},aiWords:[],customWords:[],selectedLevel:"easy",lang:"he",knownWords:[],noteWords:[],dayStreak:0,weekStreak:0,monthStreak:0,lastPlayDate:null,lastPlayWeek:null,lastPlayMonth:null,geminiKey:"",voiceGender:"female",plan:"free",aiCredits:0};}
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 function rnd(a){return a[Math.floor(Math.random()*a.length)];}
 function getLevel(xp){return[...LEVELS_XP].reverse().find(l=>xp>=l.xp)||LEVELS_XP[0];}
@@ -353,6 +370,99 @@ function calcStreaks(prev){
     newMonthStreak=(ty-py)*12+(tm-pm)===1?(prev.monthStreak||0)+1:1;
   }else if(prev.lastPlayMonth===todayMonth){newMonthStreak=prev.monthStreak||1;}
   return{dayStreak:newDayStreak,weekStreak:newWeekStreak,monthStreak:newMonthStreak,lastPlayDate:today,lastPlayWeek:todayWeek,lastPlayMonth:todayMonth};
+}
+
+function ApiKeyGuideModal({onClose,onHasKey}){
+  const steps=[
+    {n:1,title:"כנס לאתר",desc:"פתח בדפדפן: aistudio.google.com",icon:"🌐"},
+    {n:2,title:"התחבר",desc:'לחץ "Sign In" והתחבר עם חשבון Google שלך',icon:"👤"},
+    {n:3,title:'לחץ "Get API Key"',desc:"בתפריט שמאל תראה את האפשרות הזו",icon:"🔑"},
+    {n:4,title:"צור מפתח",desc:'לחץ "Create API key" ← "Create API key in new project"',icon:"✨"},
+    {n:5,title:"העתק",desc:"המפתח נוצר! לחץ על סמל ההעתקה לידו",icon:"📋"},
+    {n:6,title:"הדבק באפליקציה",desc:"חזור לפרופיל → הגדרות AI → הדבק את המפתח",icon:"✅"},
+  ];
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(16px)"}}>
+      <div style={{background:"linear-gradient(135deg,#1e1b4b,#0f172a)",border:"1px solid rgba(34,211,238,0.35)",borderRadius:24,padding:24,maxWidth:420,width:"100%",maxHeight:"88vh",overflowY:"auto",boxShadow:"0 0 60px rgba(34,211,238,0.2)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <div>
+            <div style={{fontSize:11,color:"#22d3ee",fontWeight:800,letterSpacing:2,marginBottom:2}}>🤖 GEMINI AI</div>
+            <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>קבל מפתח AI חינמי</div>
+          </div>
+          <button onClick={onClose} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"none",color:"#fff",borderRadius:"50%",width:36,height:36,fontSize:18}}>✕</button>
+        </div>
+        <div style={{background:"rgba(34,211,238,0.08)",border:"1px solid rgba(34,211,238,0.2)",borderRadius:14,padding:"10px 14px",marginBottom:18,fontSize:12,color:"#22d3ee",lineHeight:1.6}}>
+          💡 Gemini AI מציע <strong>1,500 בקשות ביום חינמיות</strong> — יותר מספיק לשימוש יומי!
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
+          {steps.map(s=>(
+            <div key={s.n} style={{display:"flex",gap:12,alignItems:"flex-start",background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.06)"}}>
+              <div style={{background:"rgba(34,211,238,0.15)",border:"1px solid rgba(34,211,238,0.3)",borderRadius:20,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:16}}>{s.icon}</div>
+              <div>
+                <div style={{fontSize:13,fontWeight:800,color:"#fff",marginBottom:2}}>שלב {s.n}: {s.title}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,0.55)",lineHeight:1.5}}>{s.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>window.open("https://aistudio.google.com/apikey","_blank")} className="btn" style={{flex:1,background:"linear-gradient(135deg,#22d3ee,#a78bfa)",border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:14,fontWeight:800}}>
+            🌐 פתח AI Studio
+          </button>
+          <button onClick={onHasKey} className="btn" style={{flex:1,background:"rgba(74,222,128,0.15)",border:"1px solid rgba(74,222,128,0.35)",borderRadius:12,padding:"13px",color:"#4ade80",fontSize:13,fontWeight:700}}>
+            ✅ יש לי מפתח
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PremiumModal({state,setState,onClose}){
+  const plans=[
+    {id:"starter",name:"מתחיל",price:"₪9.90",credits:100,desc:"100 שאלות AI",color:"#22d3ee"},
+    {id:"pro",name:"פרו",price:"₪19.90",credits:300,desc:"300 שאלות AI",color:"#a78bfa",best:true},
+    {id:"unlimited",name:"ללא הגבלה",price:"₪49.90",credits:1000,desc:"1,000 שאלות AI",color:"#f59e0b"},
+  ];
+  function unlock(credits){
+    setState(p=>{const n={...p,plan:"premium",aiCredits:(p.aiCredits||0)+credits};saveS(n);return n;});
+    onClose();
+  }
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(16px)"}}>
+      <div style={{background:"linear-gradient(135deg,#1e1b4b,#0f172a)",border:"1px solid rgba(167,139,250,0.35)",borderRadius:24,padding:24,maxWidth:420,width:"100%",maxHeight:"88vh",overflowY:"auto",boxShadow:"0 0 60px rgba(167,139,250,0.2)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+          <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>⭐ פרמיום AI</div>
+          <button onClick={onClose} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"none",color:"#fff",borderRadius:"50%",width:36,height:36,fontSize:18}}>✕</button>
+        </div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginBottom:20}}>השתמש ב-AI שלנו — בלי מפתח, בלי הגדרות</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
+          {plans.map(p=>(
+            <div key={p.id} style={{background:p.best?"rgba(167,139,250,0.12)":"rgba(255,255,255,0.04)",border:`2px solid ${p.best?p.color:"rgba(255,255,255,0.08)"}`,borderRadius:16,padding:"14px 16px",position:"relative"}}>
+              {p.best&&<div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:p.color,borderRadius:20,padding:"2px 12px",fontSize:10,color:"#1a1a2e",fontWeight:800}}>הכי פופולרי ⭐</div>}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <div>
+                  <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{p.name}</div>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>{p.desc}</div>
+                </div>
+                <div style={{textAlign:"left"}}>
+                  <div style={{fontSize:20,fontWeight:900,color:p.color}}>{p.price}</div>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>חד פעמי</div>
+                </div>
+              </div>
+              <button onClick={()=>unlock(p.credits)} className="btn" style={{width:"100%",background:`${p.color}22`,border:`1px solid ${p.color}55`,borderRadius:10,padding:"9px",color:p.color,fontSize:13,fontWeight:800}}>
+                רכוש {p.name} →
+              </button>
+            </div>
+          ))}
+        </div>
+        <div style={{fontSize:10,color:"rgba(255,255,255,0.2)",textAlign:"center",lineHeight:1.6}}>
+          * מערכת תשלום בפיתוח — לחיצה על "רכוש" תפעיל גרסת demo עם קרדיטים מלאים
+        </div>
+        {state.aiCredits>0&&<div style={{marginTop:12,fontSize:13,color:"#4ade80",textAlign:"center",fontWeight:700}}>נותרו לך {state.aiCredits} קרדיטים AI ✅</div>}
+      </div>
+    </div>
+  );
 }
 
 function DuckSVG({stage,mood,size}){
@@ -465,10 +575,14 @@ function AddWordsScreen({state,setState,onBack}){
     if(!enWord.trim()&&!heWord.trim()){setStatus("⚠️ הכנס לפחות מילה אחת");return;}
     setLoading(true);setStatus("🤖 AI בונה שאלות...");setPreview(null);
     try{
-      const text=await callGemini(`You are a technical vocabulary expert. For the word: English="${enWord||"?"}", Hebrew="${heWord||"?"}". Category: "${category}", Level: "${level}". Generate: {"en":"correct english","he":"תרגום עברי","tip":"טיפ קצר בעברית","wrongHe":["שגוי1","שגוי2","שגוי3"],"wrongEn":["wrong1","wrong2","wrong3"]}. Return JSON only.`, state.geminiKey);
+      const text=await callAI(`You are a technical vocabulary expert. For the word: English="${enWord||"?"}", Hebrew="${heWord||"?"}". Category: "${category}", Level: "${level}". Generate: {"en":"correct english","he":"תרגום עברי","tip":"טיפ קצר בעברית","wrongHe":["שגוי1","שגוי2","שגוי3"],"wrongEn":["wrong1","wrong2","wrong3"]}. Return JSON only.`, state.geminiKey, state.plan, state.aiCredits);
+      if(state.plan==="premium")setState(prev=>{const n={...prev,aiCredits:Math.max(0,prev.aiCredits-1)};saveS(n);return n;});
       const result=JSON.parse(text.replace(/```json|```/g,"").trim());
       setPreview(result);setStatus("✅ AI הכין שאלה! בדוק ואשר:");
-    }catch(e){setStatus("❌ שגיאה: "+e.message);}
+    }catch(e){
+      if(e.message==="NO_KEY")setStatus("⚠️ הגדר מפתח AI בפרופיל, או שדרג לפרמיום");
+      else setStatus("❌ שגיאה: "+e.message);
+    }
     finally{setLoading(false);}
   }
 
@@ -655,6 +769,8 @@ function ProfileScreen({user,state,setState,onBack,onLogout}){
   const duck=getDuck(state.correct);
   const knownWords=state.knownWords||[];
   const[wordSearch,setWordSearch]=useState("");
+  const[showGuide,setShowGuide]=useState(false);
+  const[showPremium,setShowPremium]=useState(false);
   const filtered=knownWords.filter(w=>w.en.toLowerCase().includes(wordSearch.toLowerCase())||w.he.includes(wordSearch));
   return(
     <div style={{padding:"16px",maxWidth:460,margin:"0 auto"}}>
@@ -726,19 +842,34 @@ function ProfileScreen({user,state,setState,onBack,onLogout}){
         </div>
       </div>
       <div style={{background:"rgba(255,255,255,0.04)",borderRadius:16,padding:16,border:"1px solid rgba(167,139,250,0.2)",marginBottom:12}}>
-        <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:4}}>🤖 Gemini AI — מפתח API</div>
-        <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",marginBottom:10}}>ניתן לקבל מפתח חינמי ב-aistudio.google.com</div>
-        <input
-          type="password"
-          value={state.geminiKey||""}
-          onChange={e=>setState(p=>{const n={...p,geminiKey:e.target.value};saveS(n);return n;})}
-          placeholder="הדבק כאן את המפתח שלך (AIza...)"
-          style={{width:"100%",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(167,139,250,0.3)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none",direction:"ltr",fontFamily:"monospace",marginBottom:6}}
-        />
-        {state.geminiKey&&<div style={{fontSize:11,color:"#4ade80",fontWeight:700}}>✅ מפתח מוגדר ({state.geminiKey.slice(0,8)}...)</div>}
-        {!state.geminiKey&&!GEMINI_KEY&&<div style={{fontSize:11,color:"#f87171",fontWeight:700}}>⚠️ אין מפתח — AI לא יעבוד</div>}
-        {!state.geminiKey&&GEMINI_KEY&&<div style={{fontSize:11,color:"#4ade80",fontWeight:700}}>✅ מפתח מוגדר מהשרת</div>}
+        <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>🤖 Gemini AI</div>
+        <div style={{background:"rgba(0,0,0,0.2)",borderRadius:12,padding:"10px 14px",marginBottom:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>תוכנית נוכחית</div>
+            <div style={{fontSize:13,fontWeight:800,color:state.plan==="premium"?"#f59e0b":state.geminiKey?"#4ade80":"rgba(255,255,255,0.4)"}}>
+              {state.plan==="premium"?`⭐ פרמיום (${state.aiCredits} קרדיטים)`:state.geminiKey?"🔑 מפתח אישי":"🆓 חינמי"}
+            </div>
+          </div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <button onClick={()=>setShowGuide(true)} className="btn" style={{background:"rgba(34,211,238,0.1)",border:"1px solid rgba(34,211,238,0.3)",borderRadius:12,padding:"11px",color:"#22d3ee",fontSize:13,fontWeight:700}}>
+            🔑 כיצד לקבל מפתח AI חינמי?
+          </button>
+          {(state.geminiKey||GEMINI_KEY)?(
+            <div style={{background:"rgba(74,222,128,0.08)",border:"1px solid rgba(74,222,128,0.2)",borderRadius:10,padding:"8px 12px"}}>
+              <div style={{fontSize:11,color:"#4ade80",fontWeight:700,marginBottom:4}}>✅ מפתח מוגדר</div>
+              <input type="password" value={state.geminiKey||""} onChange={e=>setState(p=>{const n={...p,geminiKey:e.target.value};saveS(n);return n;})} placeholder="החלף מפתח..." style={{width:"100%",background:"transparent",border:"none",color:"rgba(255,255,255,0.5)",fontSize:11,outline:"none",direction:"ltr",fontFamily:"monospace"}}/>
+            </div>
+          ):(
+            <input type="password" value={state.geminiKey||""} onChange={e=>setState(p=>{const n={...p,geminiKey:e.target.value};saveS(n);return n;})} placeholder="הדבק מפתח כאן (AIza...)" style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none",direction:"ltr",fontFamily:"monospace"}}/>
+          )}
+          <button onClick={()=>setShowPremium(true)} className="btn" style={{background:"linear-gradient(135deg,rgba(245,158,11,0.15),rgba(167,139,250,0.15))",border:"1px solid rgba(245,158,11,0.4)",borderRadius:12,padding:"11px",color:"#f59e0b",fontSize:13,fontWeight:700}}>
+            ⭐ שדרג לפרמיום — AI ללא מפתח
+          </button>
+        </div>
       </div>
+      {showGuide&&<ApiKeyGuideModal onClose={()=>setShowGuide(false)} onHasKey={()=>setShowGuide(false)}/>}
+      {showPremium&&<PremiumModal state={state} setState={setState} onClose={()=>setShowPremium(false)}/>}
       <button onClick={onLogout} className="btn" style={{width:"100%",padding:"12px",background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:12,color:"#f87171",fontSize:14,fontWeight:700}}>
         🚪 {lang==="en"?"Sign Out":"התנתק"}
       </button>
@@ -746,14 +877,14 @@ function ProfileScreen({user,state,setState,onBack,onLogout}){
   );
 }
 
-function ExplainModal({word,onClose,lang,geminiKey}){
+function ExplainModal({word,onClose,lang,geminiKey,plan,aiCredits,onUseCredit}){
   const[text,setText]=useState("");
   const[loading,setLoading]=useState(true);
   const[error,setError]=useState("");
   useEffect(()=>{
     let gone=false;
     const prompt=lang==="en"?`Explain the technical term "${word.en}" (Hebrew: "${word.he}") from "${word.category}". Include: 1.📖 Definition 2.💡 Example 3.🧠 Memory trick 4.🔗 Related terms. Be friendly, use emojis.`:`הסבר את המילה הטכנית "${word.en}" (עברית: "${word.he}") מהתחום "${word.category}". כלול: 1.📖 הגדרה פשוטה 2.💡 דוגמה מעשית 3.🧠 טריק לזכור 4.🔗 מילים קשורות. דבר בחום עם אמוגיים.`;
-    callGemini(prompt, geminiKey).then(t=>{if(!gone)setText(t);}).catch(e=>{if(!gone)setError("שגיאה: "+e.message);}).finally(()=>{if(!gone)setLoading(false);});
+    callAI(prompt, geminiKey, plan, aiCredits).then(t=>{if(!gone)setText(t);}).catch(e=>{if(!gone)setError(e.message==="NO_KEY"?"⚠️ הגדר מפתח AI בפרופיל, או שדרג לפרמיום":"שגיאה: "+e.message);}).finally(()=>{if(!gone)setLoading(false);});
     return()=>{gone=true;};
   },[word.en]);
   return(
@@ -968,7 +1099,7 @@ function QuizScreen({category,state,setState,onHome,onBack}){
       setLoadingAI(true);setAIStatus("🤖 טוען מילים חדשות...");
       const cat=category==="ALL"?rnd(CATEGORIES):category;
       const levelDesc=selectedLevel==="easy"?"basic and simple":selectedLevel==="medium"?"intermediate":"advanced and complex";
-      callGemini(`Create 15 new ${levelDesc} technical words for category "${cat}". Don't repeat: ${pool2.map(w=>w.en).slice(0,20).join(", ")}. Return JSON only: [{"en":"Word","he":"מילה","tip":"short tip in Hebrew"}]`, state.geminiKey)
+      callAI(`Create 15 new ${levelDesc} technical words for category "${cat}". Don't repeat: ${pool2.map(w=>w.en).slice(0,20).join(", ")}. Return JSON only: [{"en":"Word","he":"מילה","tip":"short tip in Hebrew"}]`, state.geminiKey, state.plan, state.aiCredits)
         .then(text=>{
           const arr=JSON.parse(text.replace(/```json|```/g,"").trim());
           const newWords=arr.map(w=>({...w,category:cat,level:selectedLevel,fromAI:true}));
@@ -1183,7 +1314,7 @@ function QuizScreen({category,state,setState,onHome,onBack}){
           </div>
         </div>
       )}
-      {showExplain&&<ExplainModal word={word} onClose={()=>setShowExplain(false)} lang={lang} geminiKey={state.geminiKey}/>}
+      {showExplain&&<ExplainModal word={word} onClose={()=>setShowExplain(false)} lang={lang} geminiKey={state.geminiKey} plan={state.plan} aiCredits={state.aiCredits} onUseCredit={()=>setState(prev=>{const n={...prev,aiCredits:Math.max(0,prev.aiCredits-1)};saveS(n);return n;})}/>}
     </div>
   );
 }
