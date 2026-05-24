@@ -395,7 +395,7 @@ const RIGHT_MSGS=["מעולה! הברווז קופץ! 🎉","נכון! הברו�
 const KEY="wmp_v_final";
 function loadS(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch{return null;}}
 function saveS(s){try{localStorage.setItem(KEY,JSON.stringify(s));}catch{}}
-function initS(){return{xp:0,correct:0,total:0,streak:0,bestStreak:0,lives:MAX_LIVES,resetAt:null,seen:{},aiWords:[],customWords:[],selectedLevel:"easy",lang:"he",knownWords:[],noteWords:[],dayStreak:0,weekStreak:0,monthStreak:0,lastPlayDate:null,lastPlayWeek:null,lastPlayMonth:null,geminiKey:"",voiceGender:"female",plan:"free",aiCredits:0};}
+function initS(){return{xp:0,correct:0,total:0,streak:0,bestStreak:0,lives:MAX_LIVES,resetAt:null,seen:{},aiWords:[],customWords:[],selectedLevel:"easy",lang:"he",knownWords:[],noteWords:[],dayStreak:0,weekStreak:0,monthStreak:0,lastPlayDate:null,lastPlayWeek:null,lastPlayMonth:null,geminiKey:"",voiceGender:"female",plan:"free",aiCredits:0,customSentences:[],customEO:[]};}
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 function rnd(a){return a[Math.floor(Math.random()*a.length)];}
 function getLevel(xp){return[...LEVELS_XP].reverse().find(l=>xp>=l.xp)||LEVELS_XP[0];}
@@ -790,8 +790,10 @@ function NotepadScreen({state,setState,onBack}){
 function SentenceScreen({state,setState,onHome,onBack}){
   const lang=state.lang||"he";
   const selectedLevel=state.selectedLevel||"easy";
-  const pool=SENTENCE_DATA.filter(s=>s.level===selectedLevel);
-  const src=pool.length?pool:SENTENCE_DATA;
+  const customSentences=(state.customSentences||[]).filter(s=>s.level===selectedLevel);
+  const basePool=SENTENCE_DATA.filter(s=>s.level===selectedLevel);
+  const pool=[...basePool,...customSentences];
+  const src=pool.length?pool:[...SENTENCE_DATA,...(state.customSentences||[])];
   const[word,setWord]=useState(()=>rnd(src));
   const[selected,setSelected]=useState([]);
   const[available,setAvailable]=useState([]);
@@ -800,6 +802,9 @@ function SentenceScreen({state,setState,onHome,onBack}){
   const[xpPop,setXpPop]=useState(null);
   const[msg,setMsg]=useState("");
   const[cardKey,setCardKey]=useState(0);
+  const[showAddForm,setShowAddForm]=useState(false);
+  const[newEn,setNewEn]=useState("");
+  const[newHe,setNewHe]=useState("");
   const duck=getDuck(state.correct);
   const level=getLevel(state.xp);
   const acc=state.total>0?Math.round((state.correct/state.total)*100):0;
@@ -834,8 +839,17 @@ function SentenceScreen({state,setState,onHome,onBack}){
   }
 
   function next(){
-    let w;do{w=rnd(src);}while(w.en===word.en&&src.length>1);
+    const freshSrc=[...SENTENCE_DATA,...(state.customSentences||[])].filter(s=>s.level===selectedLevel);
+    const s2=freshSrc.length?freshSrc:SENTENCE_DATA;
+    let w;do{w=rnd(s2);}while(w.en===word.en&&s2.length>1);
     setWord(w);setQNum(q=>q+1);setCardKey(k=>k+1);
+  }
+
+  function saveCustomSentence(){
+    if(!newEn.trim()||!newHe.trim())return;
+    const s={en:newEn.trim(),he:newHe.trim(),level:selectedLevel,custom:true};
+    setState(prev=>{const n={...prev,customSentences:[...(prev.customSentences||[]),s]};saveS(n);return n;});
+    setNewEn("");setNewHe("");setShowAddForm(false);
   }
 
   if(state.lives<=0&&state.resetAt&&Date.now()<state.resetAt)return<NoLivesScreen state={state} onHome={onHome} lang={lang}/>;
@@ -904,7 +918,7 @@ function SentenceScreen({state,setState,onHome,onBack}){
           </div>
         </div>
       )}
-      <div style={{display:"flex",gap:8}}>
+      <div style={{display:"flex",gap:8,marginBottom:10}}>
         {result===null?(
           <button onClick={checkAnswer} disabled={selected.length===0} className="btn" style={{flex:1,background:selected.length>0?"linear-gradient(135deg,#4ade80,#22d3ee)":"rgba(255,255,255,0.04)",border:selected.length>0?"none":"1px solid rgba(255,255,255,0.1)",borderRadius:12,padding:"13px",color:selected.length>0?"#1a1a2e":"rgba(255,255,255,0.25)",fontSize:15,fontWeight:900}}>
             ✓ בדוק תשובה
@@ -914,7 +928,20 @@ function SentenceScreen({state,setState,onHome,onBack}){
             {lang==="en"?"Next →":"המשך ←"}
           </button>
         )}
+        <button onClick={()=>setShowAddForm(p=>!p)} className="btn" style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:12,padding:"13px",color:"#f59e0b",fontSize:18,fontWeight:900,minWidth:48}}>➕</button>
       </div>
+      {showAddForm&&(
+        <div style={{background:"rgba(245,158,11,0.07)",border:"1px solid rgba(245,158,11,0.25)",borderRadius:14,padding:14,animation:"fadeIn 0.2s ease"}}>
+          <div style={{fontSize:12,color:"#f59e0b",fontWeight:800,marginBottom:8}}>➕ הוסף משפט חדש ({lvlLabel(selectedLevel,lang)})</div>
+          <input value={newEn} onChange={e=>setNewEn(e.target.value)} placeholder="המשפט באנגלית..." style={{width:"100%",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:13,outline:"none",direction:"ltr",marginBottom:6}}/>
+          <input value={newHe} onChange={e=>setNewHe(e.target.value)} placeholder="התרגום העברי..." style={{width:"100%",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:13,outline:"none",marginBottom:8}}/>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={saveCustomSentence} disabled={!newEn.trim()||!newHe.trim()} className="btn" style={{flex:1,background:"rgba(74,222,128,0.2)",border:"1px solid rgba(74,222,128,0.4)",borderRadius:8,padding:"8px",color:"#4ade80",fontSize:13,fontWeight:700}}>✅ שמור</button>
+            <button onClick={()=>setShowAddForm(false)} className="btn" style={{background:"rgba(255,255,255,0.07)",border:"none",borderRadius:8,padding:"8px 14px",color:"rgba(255,255,255,0.4)",fontSize:13}}>ביטול</button>
+          </div>
+          {(state.customSentences||[]).length>0&&<div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginTop:6}}>{(state.customSentences||[]).length} משפטים אישיים שמורים</div>}
+        </div>
+      )}
     </div>
   );
 }
@@ -957,6 +984,7 @@ function ProfileScreen({user,state,setState,onBack,onLogout}){
   const[wordSearch,setWordSearch]=useState("");
   const[showGuide,setShowGuide]=useState(false);
   const[showPremium,setShowPremium]=useState(false);
+  const[testStatus,setTestStatus]=useState("");
   const filtered=knownWords.filter(w=>w.en.toLowerCase().includes(wordSearch.toLowerCase())||w.he.includes(wordSearch));
   return(
     <div style={{padding:"16px",maxWidth:460,margin:"0 auto"}}>
@@ -1041,14 +1069,30 @@ function ProfileScreen({user,state,setState,onBack,onLogout}){
           <button onClick={()=>setShowGuide(true)} className="btn" style={{background:"rgba(34,211,238,0.1)",border:"1px solid rgba(34,211,238,0.3)",borderRadius:12,padding:"11px",color:"#22d3ee",fontSize:13,fontWeight:700}}>
             🔑 כיצד לקבל מפתח AI חינמי?
           </button>
-          {(state.geminiKey||GEMINI_KEY)?(
-            <div style={{background:"rgba(74,222,128,0.08)",border:"1px solid rgba(74,222,128,0.2)",borderRadius:10,padding:"8px 12px"}}>
-              <div style={{fontSize:11,color:"#4ade80",fontWeight:700,marginBottom:4}}>✅ מפתח מוגדר</div>
-              <input type="password" value={state.geminiKey||""} onChange={e=>setState(p=>{const n={...p,geminiKey:e.target.value};saveS(n);return n;})} placeholder="החלף מפתח..." style={{width:"100%",background:"transparent",border:"none",color:"rgba(255,255,255,0.5)",fontSize:11,outline:"none",direction:"ltr",fontFamily:"monospace"}}/>
-            </div>
-          ):(
-            <input type="password" value={state.geminiKey||""} onChange={e=>setState(p=>{const n={...p,geminiKey:e.target.value};saveS(n);return n;})} placeholder="הדבק מפתח כאן (AIza...)" style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none",direction:"ltr",fontFamily:"monospace"}}/>
+          <div style={{position:"relative"}}>
+            <input
+              value={state.geminiKey||""}
+              onChange={e=>setState(p=>{const n={...p,geminiKey:e.target.value.trim()};saveS(n);return n;})}
+              placeholder="הדבק מפתח Gemini כאן (AIza...)"
+              style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${state.geminiKey?"rgba(74,222,128,0.4)":"rgba(255,255,255,0.12)"}`,borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:12,outline:"none",direction:"ltr",fontFamily:"monospace"}}
+            />
+            {state.geminiKey&&<div style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:12,color:"#4ade80",pointerEvents:"none"}}>✓</div>}
+          </div>
+          {state.geminiKey&&(
+            <button onClick={async()=>{
+              setTestStatus("⏳ בודק...");
+              try{
+                await callGemini("Say only: OK",state.geminiKey);
+                setTestStatus("✅ המפתח עובד!");
+              }catch(e){
+                setTestStatus("❌ שגיאה: "+e.message.slice(0,60));
+              }
+              setTimeout(()=>setTestStatus(""),4000);
+            }} className="btn" style={{background:"rgba(74,222,128,0.1)",border:"1px solid rgba(74,222,128,0.3)",borderRadius:10,padding:"9px",color:"#4ade80",fontSize:13,fontWeight:700}}>
+              🔬 בדוק שהמפתח עובד
+            </button>
           )}
+          {testStatus&&<div style={{fontSize:12,color:testStatus.startsWith("✅")?"#4ade80":testStatus.startsWith("❌")?"#f87171":"#f59e0b",textAlign:"center",fontWeight:700}}>{testStatus}</div>}
           <button onClick={()=>setShowPremium(true)} className="btn" style={{background:"linear-gradient(135deg,rgba(245,158,11,0.15),rgba(167,139,250,0.15))",border:"1px solid rgba(245,158,11,0.4)",borderRadius:12,padding:"11px",color:"#f59e0b",fontSize:13,fontWeight:700}}>
             ⭐ שדרג לפרמיום — AI ללא מפתח
           </button>
@@ -1211,15 +1255,21 @@ function HomeScreen({user,state,setState,onStart,onSentences,onProfile,onAddWord
           <span>⚡ {lang==="en"?"All Modules":"כל המודולים"}</span>
           <span style={{fontSize:11,opacity:0.9}}>{totalWords} {lang==="en"?"words":"מילים"}</span>
         </button>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
-          <button onClick={()=>onSentences()} className="btn" style={{background:"rgba(74,222,128,0.08)",border:"1px solid rgba(74,222,128,0.4)",borderRadius:12,padding:"11px 14px",color:"#4ade80",display:"flex",flexDirection:"column",alignItems:"center",gap:3,fontWeight:700,fontSize:13}}>
-            <span>📝 בניית משפטים</span>
-            <span style={{fontSize:10,opacity:0.6}}>{SENTENCE_DATA.length} משפטים</span>
-          </button>
-          <button onClick={()=>onStart("🔭 מערכות EO/IR/RF")} className="btn" style={{background:"rgba(167,139,250,0.08)",border:"1px solid rgba(167,139,250,0.4)",borderRadius:12,padding:"11px 14px",color:"#a78bfa",display:"flex",flexDirection:"column",alignItems:"center",gap:3,fontWeight:700,fontSize:13}}>
-            <span>🔭 מונחי EO/IR/RF</span>
-            <span style={{fontSize:10,opacity:0.6}}>30 מונחים</span>
-          </button>
+        <div style={{background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:14,padding:"10px 12px",marginBottom:4}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+            <span style={{fontSize:10,background:"rgba(245,158,11,0.2)",color:"#f59e0b",borderRadius:20,padding:"2px 10px",fontWeight:800,letterSpacing:1}}>🎓 למתקדמים</span>
+            <span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>מומלץ לאחר שליטה בבסיס</span>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+            <button onClick={()=>onSentences()} className="btn" style={{background:"rgba(74,222,128,0.08)",border:"1px solid rgba(74,222,128,0.35)",borderRadius:12,padding:"11px 10px",color:"#4ade80",display:"flex",flexDirection:"column",alignItems:"center",gap:3,fontWeight:700,fontSize:12}}>
+              <span>📝 בניית משפטים</span>
+              <span style={{fontSize:10,opacity:0.55}}>{SENTENCE_DATA.length+(state.customSentences||[]).length} משפטים</span>
+            </button>
+            <button onClick={()=>onStart("🔭 מערכות EO/IR/RF")} className="btn" style={{background:"rgba(167,139,250,0.08)",border:"1px solid rgba(167,139,250,0.35)",borderRadius:12,padding:"11px 10px",color:"#a78bfa",display:"flex",flexDirection:"column",alignItems:"center",gap:3,fontWeight:700,fontSize:12}}>
+              <span>🔭 מונחי EO/IR/RF</span>
+              <span style={{fontSize:10,opacity:0.55}}>30 מונחים</span>
+            </button>
+          </div>
         </div>
         {customWords.length>0&&(
           <button onClick={()=>onStart("CUSTOM")} className="btn" style={{background:"rgba(34,211,238,0.08)",border:"1px solid rgba(34,211,238,0.4)",borderRadius:12,padding:"11px 14px",color:"#22d3ee",display:"flex",justifyContent:"space-between",alignItems:"center",fontWeight:700,fontSize:13}}>
