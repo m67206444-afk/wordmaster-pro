@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, browserLocalPersistence, setPersistence } from "firebase/auth";
+import { getFirestore, doc, setDoc, collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
 
 const GEMINI_KEY = process.env.REACT_APP_GEMINI_KEY;
 const firebaseConfig = {
@@ -14,8 +15,26 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 setPersistence(auth, browserLocalPersistence).catch(()=>{});
 const provider = new GoogleAuthProvider();
+
+async function syncLeaderboard(user, state) {
+  if (!user?.uid) return;
+  try {
+    await setDoc(doc(db, "leaderboard", user.uid), {
+      name: user.displayName || "משתמש",
+      photoURL: user.photoURL || "",
+      avatar: state.selectedAvatar || "duck",
+      xp: state.xp || 0,
+      correct: state.correct || 0,
+      bestStreak: state.bestStreak || 0,
+      level: getLevel(state.xp || 0).name,
+      completedCats: Object.values(state.catProgress || {}).filter(v => v >= 10).length,
+      updatedAt: Date.now(),
+    });
+  } catch {}
+}
 
 async function callGemini(prompt, apiKey) {
   const key = apiKey || GEMINI_KEY;
@@ -81,6 +100,235 @@ function playSound(type){
       osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.4);
     }
   }catch{}
+}
+
+function playIntroSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const master=ctx.createGain();
+    master.gain.setValueAtTime(0.38,ctx.currentTime);
+    master.connect(ctx.destination);
+    // Ascending arpeggio: C5-E5-G5-C6
+    [[523.25,0],[659.25,0.17],[783.99,0.34],[1046.5,0.52]].forEach(([freq,t])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(master);
+      o.type="sine";o.frequency.setValueAtTime(freq,ctx.currentTime+t);
+      g.gain.setValueAtTime(0,ctx.currentTime+t);
+      g.gain.linearRampToValueAtTime(0.28,ctx.currentTime+t+0.04);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.3);
+      o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+0.35);
+    });
+    // Ta-da chord at 0.72s: C major chord (C5+E5+G5+C6) held
+    [[523.25,0.72,1.1],[659.25,0.72,1.0],[783.99,0.72,0.9],[1046.5,0.72,1.2]].forEach(([freq,t,dur])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(master);
+      o.type="triangle";o.frequency.setValueAtTime(freq,ctx.currentTime+t);
+      g.gain.setValueAtTime(0,ctx.currentTime+t);
+      g.gain.linearRampToValueAtTime(0.16,ctx.currentTime+t+0.06);
+      g.gain.setValueAtTime(0.12,ctx.currentTime+t+0.5);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+dur);
+      o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+dur+0.1);
+    });
+    // Sparkle shimmer at the end
+    [880,1108,1318,1568,1760,2093].forEach((freq,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(master);
+      o.type="sine";o.frequency.setValueAtTime(freq,ctx.currentTime+1.0+i*0.055);
+      g.gain.setValueAtTime(0,ctx.currentTime+1.0+i*0.055);
+      g.gain.linearRampToValueAtTime(0.045,ctx.currentTime+1.0+i*0.055+0.03);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+1.0+i*0.055+0.45);
+      o.start(ctx.currentTime+1.0+i*0.055);o.stop(ctx.currentTime+1.9);
+    });
+  }catch{}
+}
+
+const AVATARS=[
+  {id:"duck",   name:"ברווז",    emoji:"🦆", unlockCats:0,   rare:false},
+  {id:"croc",   name:"קרוקודיל",emoji:"🐊", unlockCats:1,   rare:false},
+  {id:"goat",   name:"עז",       emoji:"🐐", unlockCats:2,   rare:false},
+  {id:"cat",    name:"חתול",     emoji:"🐱", unlockCats:3,   rare:false},
+  {id:"cow",    name:"פרה",      emoji:"🐄", unlockCats:4,   rare:false},
+  {id:"giraffe",name:"ג'ירפה",  emoji:"🦒", unlockCats:5,   rare:false},
+  {id:"dino",   name:"דינוזאור",emoji:"🦕", unlockCats:6,   rare:false},
+  {id:"sloth",  name:"עצלן",     emoji:"🦥", unlockCats:999, rare:true, advancedRequired:true},
+];
+
+function AvatarCrocSVG({size=80}){return(
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <ellipse cx="50" cy="54" rx="35" ry="30" fill="#22c55e"/>
+    <ellipse cx="50" cy="75" rx="24" ry="13" fill="#16a34a"/>
+    {[33,43,57,67].map((x,i)=><ellipse key={i} cx={x} cy={i%2===0?21:19} rx="5" ry="4" fill="#15803d"/>)}
+    <ellipse cx="34" cy="43" rx="11" ry="10" fill="#fef08a"/>
+    <ellipse cx="66" cy="43" rx="11" ry="10" fill="#fef08a"/>
+    <ellipse cx="34" cy="44" rx="6" ry="7" fill="#14532d"/>
+    <ellipse cx="66" cy="44" rx="6" ry="7" fill="#14532d"/>
+    <circle cx="32" cy="42" r="2" fill="white"/>
+    <circle cx="64" cy="42" r="2" fill="white"/>
+    <ellipse cx="43" cy="71" rx="4" ry="3" fill="#15803d"/>
+    <ellipse cx="57" cy="71" rx="4" ry="3" fill="#15803d"/>
+    <path d="M30 82 Q50 94 70 82" stroke="#15803d" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+    {[37,45,50,55,63].map((x,i)=><polygon key={i} points={`${x-2.5},83 ${x},78 ${x+2.5},83`} fill="white"/>)}
+  </svg>
+);}
+
+function AvatarGoatSVG({size=80}){return(
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <ellipse cx="50" cy="55" rx="33" ry="28" fill="#e8d5a3"/>
+    <circle cx="50" cy="38" r="22" fill="#e8d5a3"/>
+    <path d="M34 18 Q30 5 26 14" stroke="#c4a35a" strokeWidth="5" fill="none" strokeLinecap="round"/>
+    <path d="M66 18 Q70 5 74 14" stroke="#c4a35a" strokeWidth="5" fill="none" strokeLinecap="round"/>
+    <ellipse cx="50" cy="62" rx="10" ry="8" fill="#d4c090"/>
+    <ellipse cx="50" cy="64" rx="7" ry="5" fill="#f5e6c8"/>
+    <ellipse cx="36" cy="38" rx="8" ry="7" fill="#fffde7"/>
+    <ellipse cx="64" cy="38" rx="8" ry="7" fill="#fffde7"/>
+    <ellipse cx="36" cy="39" rx="3" ry="5" fill="#5c3d11"/>
+    <ellipse cx="64" cy="39" rx="3" ry="5" fill="#5c3d11"/>
+    <circle cx="35" cy="37" r="1.5" fill="white"/>
+    <circle cx="63" cy="37" r="1.5" fill="white"/>
+    <ellipse cx="44" cy="58" rx="3" ry="2" fill="#c49a6c"/>
+    <ellipse cx="56" cy="58" rx="3" ry="2" fill="#c49a6c"/>
+    <path d="M44 62 Q50 68 56 62" stroke="#c49a6c" strokeWidth="1.5" fill="none"/>
+    <path d="M44 72 Q50 82 56 72" stroke="#c4a35a" strokeWidth="6" fill="none" strokeLinecap="round"/>
+    <ellipse cx="50" cy="84" rx="6" ry="9" fill="#d4c090"/>
+  </svg>
+);}
+
+function AvatarCatSVG({size=80}){return(
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <polygon points="28,32 20,12 38,26" fill="#f97316"/>
+    <polygon points="72,32 80,12 62,26" fill="#f97316"/>
+    <polygon points="30,30 22,14 38,26" fill="#fde68a"/>
+    <polygon points="70,30 78,14 62,26" fill="#fde68a"/>
+    <circle cx="50" cy="52" r="30" fill="#f97316"/>
+    <circle cx="50" cy="54" r="20" fill="#fed7aa"/>
+    <ellipse cx="35" cy="45" rx="10" ry="9" fill="#1c1917"/>
+    <ellipse cx="65" cy="45" rx="10" ry="9" fill="#1c1917"/>
+    <ellipse cx="35" cy="46" rx="5" ry="7" fill="#15803d"/>
+    <ellipse cx="65" cy="46" rx="5" ry="7" fill="#15803d"/>
+    <circle cx="33" cy="43" r="2" fill="white"/>
+    <circle cx="63" cy="43" r="2" fill="white"/>
+    <ellipse cx="50" cy="61" rx="5" ry="4" fill="#f472b6"/>
+    <path d="M40 63 Q50 69 60 63" stroke="#9a3412" strokeWidth="1.5" fill="none"/>
+    {[-20,-8,8,20].map((dx,i)=><line key={i} x1={50+(dx>0?8:-8)} y1="60" x2={50+(dx>0?32:-32)} y2={56+i%2*4} stroke="#92400e" strokeWidth="1.2"/>)}
+    <path d="M30 76 Q50 85 70 76" stroke="#f97316" strokeWidth="7" fill="none" strokeLinecap="round"/>
+  </svg>
+);}
+
+function AvatarCowSVG({size=80}){return(
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <path d="M36 22 Q33 12 30 18" stroke="#78350f" strokeWidth="5" fill="none" strokeLinecap="round"/>
+    <path d="M64 22 Q67 12 70 18" stroke="#78350f" strokeWidth="5" fill="none" strokeLinecap="round"/>
+    <ellipse cx="50" cy="52" rx="34" ry="30" fill="#f8fafc"/>
+    <circle cx="50" cy="38" r="22" fill="#f8fafc"/>
+    <ellipse cx="32" cy="30" rx="9" ry="8" fill="#1e293b" opacity="0.85"/>
+    <ellipse cx="68" cy="45" rx="8" ry="7" fill="#1e293b" opacity="0.8"/>
+    <ellipse cx="55" cy="22" rx="7" ry="6" fill="#1e293b" opacity="0.75"/>
+    <ellipse cx="35" cy="40" rx="10" ry="9" fill="#fff"/>
+    <ellipse cx="65" cy="40" rx="10" ry="9" fill="#fff"/>
+    <circle cx="35" cy="41" r="5" fill="#1e293b"/>
+    <circle cx="65" cy="41" r="5" fill="#1e293b"/>
+    <circle cx="33" cy="39" r="2" fill="white"/>
+    <circle cx="63" cy="39" r="2" fill="white"/>
+    <ellipse cx="50" cy="60" rx="14" ry="10" fill="#fca5a5"/>
+    <ellipse cx="44" cy="58" rx="4" ry="3" fill="#f87171"/>
+    <ellipse cx="56" cy="58" rx="4" ry="3" fill="#f87171"/>
+    <path d="M42 65 Q50 71 58 65" stroke="#f87171" strokeWidth="1.5" fill="none"/>
+    <ellipse cx="37" cy="80" rx="8" ry="6" fill="#fda4af"/>
+    <ellipse cx="50" cy="82" rx="8" ry="6" fill="#fda4af"/>
+    <ellipse cx="63" cy="80" rx="8" ry="6" fill="#fda4af"/>
+  </svg>
+);}
+
+function AvatarGiraffeSVG({size=80}){return(
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <rect x="44" y="55" width="12" height="30" rx="6" fill="#fbbf24"/>
+    <ellipse cx="42" cy="55" rx="7" ry="22" fill="#fbbf24"/>
+    <ellipse cx="58" cy="55" rx="7" ry="22" fill="#fbbf24"/>
+    {[[40,45,8],[58,38,9],[42,62,7],[60,58,10],[50,50,8]].map(([x,y,r],i)=><ellipse key={i} cx={x} cy={y} rx={r} ry={Math.round(r*0.8)} fill="#92400e" opacity="0.55"/>)}
+    <circle cx="50" cy="28" r="20" fill="#fbbf24"/>
+    <ellipse cx="42" cy="12" rx="4" ry="7" fill="#fbbf24"/>
+    <ellipse cx="58" cy="12" rx="4" ry="7" fill="#fbbf24"/>
+    <circle cx="42" cy="8" r="3" fill="#78350f"/>
+    <circle cx="58" cy="8" r="3" fill="#78350f"/>
+    <ellipse cx="36" cy="28" rx="9" ry="8" fill="white"/>
+    <ellipse cx="64" cy="28" rx="9" ry="8" fill="white"/>
+    <circle cx="36" cy="29" r="5" fill="#1c1917"/>
+    <circle cx="64" cy="29" r="5" fill="#1c1917"/>
+    <circle cx="34" cy="27" r="2" fill="white"/>
+    <circle cx="62" cy="27" r="2" fill="white"/>
+    <ellipse cx="50" cy="40" rx="8" ry="5" fill="#f59e0b"/>
+    <ellipse cx="44" cy="38" rx="3" ry="2" fill="#92400e"/>
+    <ellipse cx="56" cy="38" rx="3" ry="2" fill="#92400e"/>
+    <path d="M42 43 Q50 50 58 43" stroke="#92400e" strokeWidth="1.5" fill="none"/>
+    {[[-14,3],[14,3],[-14,-3],[14,-3]].map(([dy,dx],i)=><line key={i} x1={i<2?42:58} y1={38} x2={i<2?42+dy:58+dy} y2={38+dx} stroke="#92400e" strokeWidth="1"/>)}
+  </svg>
+);}
+
+function AvatarDinoSVG({size=80}){return(
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    {[25,35,45,55,65,75].map((x,i)=><ellipse key={i} cx={x} cy={i%2===0?16:12} rx="5" ry={i%2===0?7:6} fill="#16a34a"/>)}
+    <circle cx="50" cy="48" r="30" fill="#4ade80"/>
+    <ellipse cx="50" cy="72" rx="26" ry="18" fill="#22c55e"/>
+    <ellipse cx="34" cy="40" rx="11" ry="10" fill="white"/>
+    <ellipse cx="66" cy="40" rx="11" ry="10" fill="white"/>
+    <circle cx="34" cy="40" r="6" fill="#1c1917"/>
+    <circle cx="66" cy="40" r="6" fill="#1c1917"/>
+    <circle cx="32" cy="38" r="2.5" fill="white"/>
+    <circle cx="64" cy="38" r="2.5" fill="white"/>
+    <ellipse cx="50" cy="61" rx="20" ry="8" fill="#16a34a"/>
+    {[33,40,47,53,60,67].map((x,i)=><polygon key={i} points={`${x-3},65 ${x},57 ${x+3},65`} fill="white"/>)}
+    <path d="M30 69 Q50 80 70 69" stroke="#15803d" strokeWidth="2" fill="none"/>
+    <ellipse cx="22" cy="72" rx="6" ry="3" fill="#4ade80"/>
+    <ellipse cx="78" cy="72" rx="6" ry="3" fill="#4ade80"/>
+  </svg>
+);}
+
+function AvatarSlothSVG({size=80}){return(
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <circle cx="50" cy="46" r="32" fill="#a16207"/>
+    <ellipse cx="50" cy="54" rx="22" ry="18" fill="#d4a15a"/>
+    <ellipse cx="50" cy="50" rx="20" ry="15" fill="#fde68a" opacity="0.5"/>
+    <ellipse cx="34" cy="38" rx="10" ry="7" fill="#78350f" opacity="0.6"/>
+    <ellipse cx="66" cy="38" rx="10" ry="7" fill="#78350f" opacity="0.6"/>
+    <ellipse cx="34" cy="41" rx="10" ry="8" fill="white"/>
+    <ellipse cx="66" cy="41" rx="10" ry="8" fill="white"/>
+    <ellipse cx="34" cy="44" rx="7" ry="4" fill="#1c1917"/>
+    <ellipse cx="66" cy="44" rx="7" ry="4" fill="#1c1917"/>
+    <circle cx="32" cy="40" r="1.5" fill="white"/>
+    <circle cx="64" cy="40" r="1.5" fill="white"/>
+    <path d="M34 42 Q34 46 34 42" stroke="#1c1917" strokeWidth="2"/>
+    <path d="M66 42 Q66 46 66 42" stroke="#1c1917" strokeWidth="2"/>
+    <line x1="29" y1="40" x2="34" y2="42" stroke="#78350f" strokeWidth="1.5"/>
+    <line x1="29" y1="44" x2="34" y2="42" stroke="#78350f" strokeWidth="1.5"/>
+    <line x1="71" y1="40" x2="66" y2="42" stroke="#78350f" strokeWidth="1.5"/>
+    <line x1="71" y1="44" x2="66" y2="42" stroke="#78350f" strokeWidth="1.5"/>
+    <ellipse cx="50" cy="61" rx="7" ry="5" fill="#c49a3c"/>
+    <ellipse cx="44" cy="59" rx="3" ry="2" fill="#a16207"/>
+    <ellipse cx="56" cy="59" rx="3" ry="2" fill="#a16207"/>
+    <path d="M43 65 Q50 72 57 65" stroke="#92400e" strokeWidth="2" fill="none"/>
+    <line x1="20" y1="65" x2="30" y2="50" stroke="#78350f" strokeWidth="7" strokeLinecap="round"/>
+    <line x1="80" y1="65" x2="70" y2="50" stroke="#78350f" strokeWidth="7" strokeLinecap="round"/>
+    {[-3,0,3].map((d,i)=><line key={i} x1={24+d} y1="65" x2={22+d} y2="76" stroke="#4a2006" strokeWidth="2.5" strokeLinecap="round"/>)}
+    {[-3,0,3].map((d,i)=><line key={i} x1={76+d} y1="65" x2={78+d} y2="76" stroke="#4a2006" strokeWidth="2.5" strokeLinecap="round"/>)}
+    <text x="38" y="32" fontSize="12" textAnchor="middle">💤</text>
+    <text x="68" y="28" fontSize="9" textAnchor="middle">z</text>
+  </svg>
+);}
+
+function AvatarDuckSVG({size=80,duck}){
+  return <DuckSVG stage={duck||DUCK_STAGES[3]} mood="happy" size={size}/>;
+}
+
+function AvatarSVG({id, size=80, duck}){
+  if(id==="duck")    return<AvatarDuckSVG size={size} duck={duck}/>;
+  if(id==="croc")    return<AvatarCrocSVG size={size}/>;
+  if(id==="goat")    return<AvatarGoatSVG size={size}/>;
+  if(id==="cat")     return<AvatarCatSVG size={size}/>;
+  if(id==="cow")     return<AvatarCowSVG size={size}/>;
+  if(id==="giraffe") return<AvatarGiraffeSVG size={size}/>;
+  if(id==="dino")    return<AvatarDinoSVG size={size}/>;
+  if(id==="sloth")   return<AvatarSlothSVG size={size}/>;
+  return<AvatarDuckSVG size={size} duck={duck}/>;
 }
 
 const BASE_WORDS = {
@@ -396,7 +644,7 @@ const RIGHT_MSGS=["מעולה! הברווז קופץ! 🎉","נכון! הברו�
 const KEY="wmp_v_final";
 function loadS(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch{return null;}}
 function saveS(s){try{localStorage.setItem(KEY,JSON.stringify(s));}catch{}}
-function initS(){return{xp:0,correct:0,total:0,streak:0,bestStreak:0,lives:MAX_LIVES,resetAt:null,seen:{},aiWords:[],customWords:[],selectedLevel:"easy",lang:"he",knownWords:[],noteWords:[],dayStreak:0,weekStreak:0,monthStreak:0,lastPlayDate:null,lastPlayWeek:null,lastPlayMonth:null,geminiKey:"",voiceGender:"female",plan:"free",aiCredits:0,customSentences:[],customEO:[]};}
+function initS(){return{xp:0,correct:0,total:0,streak:0,bestStreak:0,lives:MAX_LIVES,resetAt:null,seen:{},aiWords:[],customWords:[],selectedLevel:"easy",lang:"he",knownWords:[],noteWords:[],dayStreak:0,weekStreak:0,monthStreak:0,lastPlayDate:null,lastPlayWeek:null,lastPlayMonth:null,geminiKey:"",voiceGender:"female",plan:"free",aiCredits:0,customSentences:[],customEO:[],selectedAvatar:"duck",unlockedAvatars:["duck"],catProgress:{}};}
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 function rnd(a){return a[Math.floor(Math.random()*a.length)];}
 function getLevel(xp){return[...LEVELS_XP].reverse().find(l=>xp>=l.xp)||LEVELS_XP[0];}
@@ -959,6 +1207,7 @@ function SplashScreen({onDone}){
   const doneCb=useRef(onDone);
   doneCb.current=onDone;
   useEffect(()=>{
+    playIntroSound();
     const t1=setTimeout(()=>setPhase(1),920);
     const t2=setTimeout(()=>setOut(true),2750);
     const t3=setTimeout(()=>doneCb.current(),3100);
@@ -1003,6 +1252,117 @@ function SplashScreen({onDone}){
           <div style={{fontSize:12,color:"rgba(255,255,255,0.38)",letterSpacing:3,textTransform:"uppercase",animation:"fadeIn 0.7s 1s both"}}>
             📚 מילים טכניות &nbsp;•&nbsp; אנגלית ועברית
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AvatarSelectModal({state,setState,onClose}){
+  const unlocked=state.unlockedAvatars||["duck"];
+  const completedCount=Object.values(state.catProgress||{}).filter(v=>v>=10).length;
+  const advancedDone=(state.catProgress?.["💬 תכנות באנגלית"]||0)>=10&&(state.catProgress?.["🔭 מערכות EO/IR/RF"]||0)>=10;
+  function isUnlocked(av){
+    if(av.id==="duck")return true;
+    if(av.advancedRequired)return advancedDone;
+    return completedCount>=av.unlockCats;
+  }
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16,backdropFilter:"blur(14px)"}} onClick={onClose}>
+      <div style={{background:"linear-gradient(135deg,#1e1b4b,#0f172a)",border:"1px solid rgba(167,139,250,0.35)",borderRadius:24,padding:22,maxWidth:400,width:"100%",maxHeight:"88vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>🎭 בחר בובה</div>
+          <button onClick={onClose} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"none",color:"#fff",borderRadius:"50%",width:32,height:32,fontSize:16}}>✕</button>
+        </div>
+        <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:14,lineHeight:1.6}}>
+          קטגוריות שהשלמת: <span style={{color:"#4ade80",fontWeight:800}}>{completedCount}</span> | לכל 10 תשובות נכונות בקטגוריה = קטגוריה הושלמה
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          {AVATARS.map(av=>{
+            const unlk=isUnlocked(av);
+            const sel=state.selectedAvatar===av.id;
+            return(
+              <button key={av.id} onClick={()=>{
+                if(!unlk)return;
+                setState(p=>{const n={...p,selectedAvatar:av.id};saveS(n);return n;});
+                onClose();
+              }} className="btn" style={{background:sel?"rgba(167,139,250,0.22)":unlk?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.3)",border:`2px solid ${sel?"#a78bfa":unlk?"rgba(255,255,255,0.12)":"rgba(255,255,255,0.05)"}`,borderRadius:16,padding:"14px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:6,opacity:unlk?1:0.45,cursor:unlk?"pointer":"default",position:"relative"}}>
+                {av.rare&&<div style={{position:"absolute",top:-6,right:-6,background:"linear-gradient(135deg,#f59e0b,#ef4444)",borderRadius:10,padding:"1px 7px",fontSize:9,color:"white",fontWeight:900}}>נדיר ✨</div>}
+                {sel&&<div style={{position:"absolute",top:-6,left:-6,background:"#a78bfa",borderRadius:10,padding:"1px 7px",fontSize:9,color:"white",fontWeight:900}}>✓ נבחר</div>}
+                <div style={{width:64,height:64,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+                  <AvatarSVG id={av.id} size={64} duck={getDuck(state.correct)}/>
+                  {!unlk&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🔒</div>}
+                </div>
+                <div style={{fontSize:12,fontWeight:800,color:unlk?"#fff":"rgba(255,255,255,0.4)"}}>{av.name}</div>
+                {!unlk&&<div style={{fontSize:9,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>
+                  {av.advancedRequired?"השלם תכנות + EO/IR/RF":`עוד ${av.unlockCats-completedCount} קטגוריות`}
+                </div>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LeaderboardScreen({user,state,onBack}){
+  const[leaders,setLeaders]=useState([]);
+  const[loading,setLoading]=useState(true);
+  useEffect(()=>{
+    const q=query(collection(db,"leaderboard"),orderBy("xp","desc"),limit(20));
+    const unsub=onSnapshot(q,snap=>{
+      setLeaders(snap.docs.map(d=>({id:d.id,...d.data()})));
+      setLoading(false);
+    },()=>setLoading(false));
+    return unsub;
+  },[]);
+  const myRank=leaders.findIndex(l=>l.id===user?.uid)+1;
+  return(
+    <div style={{padding:"16px",maxWidth:460,margin:"0 auto"}}>
+      <div style={{display:"flex",gap:8,marginBottom:16,alignItems:"center"}}>
+        <button onClick={onBack} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",color:"#94a3b8",borderRadius:10,padding:"7px 13px",fontSize:13,fontWeight:700}}>🏠 בית</button>
+        <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>🏆 לוח תוצאות</div>
+      </div>
+      {myRank>0&&(
+        <div style={{background:"linear-gradient(135deg,rgba(245,158,11,0.18),rgba(167,139,250,0.12))",border:"1px solid rgba(245,158,11,0.4)",borderRadius:14,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
+          <div style={{fontSize:28,fontWeight:900,color:"#f59e0b",width:40,textAlign:"center"}}>#{myRank}</div>
+          <div>
+            <div style={{fontSize:13,fontWeight:800,color:"#fff"}}>הדירוג שלך</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>מתוך {leaders.length} שחקנים</div>
+          </div>
+        </div>
+      )}
+      {loading?(
+        <div style={{textAlign:"center",padding:40}}>
+          <div style={{animation:"duckIdle 2s ease infinite",display:"inline-block"}}><DuckSVG stage={DUCK_STAGES[2]} mood="idle" size={60}/></div>
+          <div style={{color:"rgba(255,255,255,0.4)",marginTop:12,fontSize:13}}>טוען...</div>
+        </div>
+      ):(
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {leaders.map((l,i)=>{
+            const isMe=l.id===user?.uid;
+            const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":null;
+            return(
+              <div key={l.id} style={{background:isMe?"rgba(167,139,250,0.16)":"rgba(255,255,255,0.04)",border:`1.5px solid ${isMe?"rgba(167,139,250,0.5)":i<3?"rgba(245,158,11,0.3)":"rgba(255,255,255,0.08)"}`,borderRadius:14,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,animation:"slideUp 0.3s ease both",animationDelay:`${i*0.04}s`}}>
+                <div style={{fontSize:i<3?22:16,fontWeight:900,color:i===0?"#f59e0b":i===1?"#94a3b8":i===2?"#b45309":"rgba(255,255,255,0.4)",width:36,textAlign:"center",flexShrink:0}}>
+                  {medal||`#${i+1}`}
+                </div>
+                <div style={{width:42,height:42,borderRadius:"50%",overflow:"hidden",background:"rgba(255,255,255,0.08)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${isMe?"#a78bfa":"rgba(255,255,255,0.1)"}`}}>
+                  <AvatarSVG id={l.avatar||"duck"} size={42}/>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:800,color:isMe?"#c4b5fd":"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{l.name}{isMe&&" (אני)"}</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{l.level||"מתחיל"} • {l.completedCats||0} קטגוריות</div>
+                </div>
+                <div style={{textAlign:"left",flexShrink:0}}>
+                  <div style={{fontSize:16,fontWeight:900,color:"#f59e0b"}}>{(l.xp||0).toLocaleString()}</div>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>XP</div>
+                </div>
+              </div>
+            );
+          })}
+          {leaders.length===0&&<div style={{textAlign:"center",padding:32,color:"rgba(255,255,255,0.3)",fontSize:14}}>אין שחקנים עדיין 🦆</div>}
         </div>
       )}
     </div>
@@ -1074,18 +1434,27 @@ function ProfileScreen({user,state,setState,onBack,onLogout}){
   const[showGuide,setShowGuide]=useState(false);
   const[showPremium,setShowPremium]=useState(false);
   const[testStatus,setTestStatus]=useState("");
+  const[showAvatarSelect,setShowAvatarSelect]=useState(false);
   const filtered=knownWords.filter(w=>w.en.toLowerCase().includes(wordSearch.toLowerCase())||w.he.includes(wordSearch));
+  const selAvatar=state.selectedAvatar||"duck";
+  const completedCount=Object.values(state.catProgress||{}).filter(v=>v>=10).length;
   return(
     <div style={{padding:"16px",maxWidth:460,margin:"0 auto"}}>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <button onClick={onBack} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",color:"#94a3b8",borderRadius:10,padding:"7px 13px",fontSize:13,fontWeight:700}}>🏠 בית</button>
       </div>
       <div style={{textAlign:"center",marginBottom:20}}>
-        {user?.photoURL&&<img src={user.photoURL} alt="" style={{width:80,height:80,borderRadius:"50%",border:"3px solid #a78bfa",marginBottom:8}} onError={e=>e.target.style.display="none"}/>}
+        <button onClick={()=>setShowAvatarSelect(true)} className="btn" style={{background:"none",border:"none",padding:0,display:"inline-block",position:"relative",marginBottom:8}}>
+          <div style={{width:100,height:100,borderRadius:"50%",background:"linear-gradient(135deg,#a78bfa33,#22d3ee33)",border:"3px solid rgba(167,139,250,0.55)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto",boxShadow:"0 0 28px rgba(167,139,250,0.3)",overflow:"hidden"}}>
+            <AvatarSVG id={selAvatar} size={88} duck={duck}/>
+          </div>
+          <div style={{position:"absolute",bottom:4,right:4,background:"rgba(167,139,250,0.85)",borderRadius:"50%",width:24,height:24,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>✏️</div>
+        </button>
         <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{user?.displayName||"משתמש"}</div>
         <div style={{fontSize:14,color:"rgba(255,255,255,0.5)"}}>{user?.email}</div>
-        <div style={{fontSize:11,color:duck.color,marginTop:4}}>{duck.name}</div>
+        <div style={{fontSize:11,color:duck.color,marginTop:4}}>{duck.name} • {completedCount} קטגוריות הושלמו</div>
       </div>
+      {showAvatarSelect&&<AvatarSelectModal state={state} setState={setState} onClose={()=>setShowAvatarSelect(false)}/>}
       <div style={{background:"rgba(255,255,255,0.04)",borderRadius:16,padding:16,border:"1px solid rgba(255,255,255,0.08)",marginBottom:12}}>
         <div style={{fontSize:13,fontWeight:800,color:"rgba(255,255,255,0.7)",marginBottom:12}}>🔥 הרצפים שלי</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
@@ -1242,7 +1611,7 @@ function NoLivesScreen({state,onHome,lang}){
   );
 }
 
-function HomeScreen({user,state,setState,onStart,onSentences,onProfile,onAddWords,onNotepad,onReset}){
+function HomeScreen({user,state,setState,onStart,onSentences,onProfile,onAddWords,onNotepad,onReset,onLeaderboard}){
   const lang=state.lang||"he";
   const level=getLevel(state.xp),nextLevel=getNext(state.xp);
   const duck=getDuck(state.correct);
@@ -1251,25 +1620,34 @@ function HomeScreen({user,state,setState,onStart,onSentences,onProfile,onAddWord
   const totalWords=ALL_BASE.length+(state.aiWords?.length||0)+customWords.length;
   const seen=Object.keys(state.seen).length;
   const xpPct=Math.min(100,((state.xp-level.xp)/((nextLevel?nextLevel.xp:level.xp+1000)-level.xp))*100);
+  const[showAvatarSelect,setShowAvatarSelect]=useState(false);
+  const selAvatar=state.selectedAvatar||"duck";
   return(
     <div style={{padding:"16px",maxWidth:460,margin:"0 auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <button onClick={onProfile} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,padding:"8px 12px",color:"#fff",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-          {user?.photoURL&&<img src={user.photoURL} alt="" style={{width:22,height:22,borderRadius:"50%"}} onError={e=>e.target.style.display="none"}/>}
           👤 {lang==="en"?"Profile":"פרופיל"}
+        </button>
+        <button onClick={onLeaderboard} className="btn" style={{background:"rgba(245,158,11,0.12)",border:"1px solid rgba(245,158,11,0.35)",borderRadius:12,padding:"8px 12px",color:"#f59e0b",fontSize:13,fontWeight:700}}>
+          🏆 ניקוד
         </button>
         <button onClick={()=>setState(p=>{const n={...p,lang:p.lang==="he"?"en":"he"};saveS(n);return n;})} className="btn" style={{background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.3)",borderRadius:10,padding:"7px 12px",color:"#a5b4fc",fontSize:12,fontWeight:700}}>
           {lang==="he"?"🇺🇸 EN":"🇮🇱 HE"}
         </button>
       </div>
       <div style={{textAlign:"center",marginBottom:14}}>
-        <div style={{display:"inline-block",animation:"duckIdle 3s ease infinite"}}>
-          <DuckSVG stage={duck} mood="idle" size={duck.size}/>
-        </div>
+        <button onClick={()=>setShowAvatarSelect(true)} className="btn" style={{background:"none",border:"none",padding:0,marginBottom:10,display:"inline-block",position:"relative"}}>
+          <div style={{width:110,height:110,borderRadius:"50%",background:"linear-gradient(135deg,#a78bfa33,#22d3ee33)",border:"3px solid rgba(167,139,250,0.55)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto",boxShadow:"0 0 28px rgba(167,139,250,0.3)",overflow:"hidden",animation:"glow 3s ease infinite"}}>
+            <AvatarSVG id={selAvatar} size={96} duck={duck}/>
+          </div>
+          <div style={{position:"absolute",bottom:4,right:4,background:"rgba(167,139,250,0.85)",borderRadius:"50%",width:24,height:24,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✏️</div>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginTop:4}}>{AVATARS.find(a=>a.id===selAvatar)?.name||"ברווז"}</div>
+        </button>
         <div style={{fontSize:11,fontWeight:800,color:duck.color,background:`${duck.color}22`,borderRadius:20,padding:"3px 14px",display:"inline-block",marginBottom:8}}>{duck.name}</div>
         <div style={{fontSize:30,fontWeight:900,lineHeight:1,background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee,#4ade80,#f472b6)",backgroundSize:"300% 300%",animation:"rainbow 5s ease infinite",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>WordMaster Pro</div>
         <div style={{color:"rgba(255,255,255,0.45)",fontSize:12,marginTop:4}}>🔬 כיול • אופטיקה • אלקטרוניקה • פיזיקה</div>
       </div>
+      {showAvatarSelect&&<AvatarSelectModal state={state} setState={setState} onClose={()=>setShowAvatarSelect(false)}/>}
       {(state.dayStreak>0||state.weekStreak>0||state.monthStreak>0)&&(
         <div style={{display:"flex",gap:6,marginBottom:10,justifyContent:"center",flexWrap:"wrap"}}>
           {state.dayStreak>0&&<div style={{background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:20,padding:"4px 12px",fontSize:12,color:"#f59e0b",fontWeight:800}}>📅 {state.dayStreak} ימים</div>}
@@ -1500,7 +1878,18 @@ function QuizScreen({category,state,setState,onHome,onBack}){
       const kw=prev.knownWords||[];
       const newKnownWords=ok&&!kw.find(w=>w.en===word.en)?[...kw,{en:word.en,he:word.he,category:word.category,level:word.level||selectedLevel}]:kw;
       const streakUpdate=calcStreaks(prev);
-      const n={...prev,total:prev.total+1,correct:prev.correct+(ok?1:0),streak:ok?prev.streak+1:0,bestStreak:ok?Math.max(prev.bestStreak,prev.streak+1):prev.bestStreak,xp:newXP,lives:newLives,resetAt:newResetAt,seen:ok?{...prev.seen,[word.en]:true}:prev.seen,knownWords:newKnownWords,...streakUpdate};
+      const newCatProgress={...prev.catProgress};
+      if(ok&&word.category){newCatProgress[word.category]=(newCatProgress[word.category]||0)+1;}
+      const newCompletedCount=Object.values(newCatProgress).filter(v=>v>=10).length;
+      const advancedDone=(newCatProgress["💬 תכנות באנגלית"]||0)>=10&&(newCatProgress["🔭 מערכות EO/IR/RF"]||0)>=10;
+      const newUnlocked=[...(prev.unlockedAvatars||["duck"])];
+      AVATARS.forEach(av=>{
+        if(av.id==="duck")return;
+        if(newUnlocked.includes(av.id))return;
+        if(av.advancedRequired&&advancedDone)newUnlocked.push(av.id);
+        else if(!av.advancedRequired&&newCompletedCount>=av.unlockCats)newUnlocked.push(av.id);
+      });
+      const n={...prev,total:prev.total+1,correct:prev.correct+(ok?1:0),streak:ok?prev.streak+1:0,bestStreak:ok?Math.max(prev.bestStreak,prev.streak+1):prev.bestStreak,xp:newXP,lives:newLives,resetAt:newResetAt,seen:ok?{...prev.seen,[word.en]:true}:prev.seen,knownWords:newKnownWords,catProgress:newCatProgress,unlockedAvatars:newUnlocked,...streakUpdate};
       saveS(n);return n;
     });
     playSound(ok?"correct":"wrong");
@@ -1668,6 +2057,13 @@ function App(){
     return unsub;
   },[]);
 
+  const syncRef=useRef(null);
+  useEffect(()=>{
+    if(!user)return;
+    clearTimeout(syncRef.current);
+    syncRef.current=setTimeout(()=>syncLeaderboard(user,state),4000);
+  },[state.xp,user]);
+
   const bgMap={
     "מתחיל":"linear-gradient(160deg,#0f2027,#203a43,#2c5364)",
     "חוקר":"linear-gradient(160deg,#0f0c29,#302b63,#24243e)",
@@ -1699,10 +2095,11 @@ function App(){
     <div style={{minHeight:"100vh",background:bgMap[lv.name]||bgMap["מתחיל"],transition:"background 1.2s ease",fontFamily:"'Heebo',sans-serif",direction:lang==="he"?"rtl":"ltr",color:"#fff",overflowX:"hidden"}}>
       <style>{CSS}</style>
       <div style={{position:"fixed",inset:0,pointerEvents:"none",opacity:0.04,backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.9) 1px,transparent 1px)",backgroundSize:"28px 28px"}}/>
-      {screen==="home"&&<HomeScreen user={user} state={state} setState={setState} onStart={cat=>{setCategory(cat);setScreen("quiz");}} onSentences={()=>setScreen("sentences")} onProfile={()=>setScreen("profile")} onAddWords={()=>setScreen("addwords")} onNotepad={()=>setScreen("notepad")} onReset={()=>{if(window.confirm(lang==="en"?"Delete all progress?":"למחוק הכל?")){const f=initS();setState(f);saveS(f);}}}/>}
+      {screen==="home"&&<HomeScreen user={user} state={state} setState={setState} onStart={cat=>{setCategory(cat);setScreen("quiz");}} onSentences={()=>setScreen("sentences")} onProfile={()=>setScreen("profile")} onAddWords={()=>setScreen("addwords")} onNotepad={()=>setScreen("notepad")} onLeaderboard={()=>setScreen("leaderboard")} onReset={()=>{if(window.confirm(lang==="en"?"Delete all progress?":"למחוק הכל?")){const f=initS();setState(f);saveS(f);}}}/>}
       {screen==="quiz"&&<QuizScreen category={category} state={state} setState={setState} onHome={()=>setScreen("home")} onBack={()=>setScreen("home")}/>}
       {screen==="sentences"&&<SentenceScreen state={state} setState={setState} onHome={()=>setScreen("home")} onBack={()=>setScreen("home")}/>}
       {screen==="profile"&&<ProfileScreen user={user} state={state} setState={setState} onBack={()=>setScreen("home")} onLogout={async()=>{await signOut(auth);setUser(null);setScreen("home");}}/>}
+      {screen==="leaderboard"&&<LeaderboardScreen user={user} state={state} onBack={()=>setScreen("home")}/>}
       {screen==="addwords"&&<AddWordsScreen state={state} setState={setState} onBack={()=>setScreen("home")}/>}
       {screen==="notepad"&&<NotepadScreen state={state} setState={setState} onBack={()=>setScreen("home")}/>}
     </div>
