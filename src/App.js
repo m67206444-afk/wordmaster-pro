@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "firebase/auth";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, browserLocalPersistence, setPersistence } from "firebase/auth";
 
-// ══════════════════════════════════════════════════════
-// 🔑 החלף כאן את המפתח שלך
-// ══════════════════════════════════════════════════════
 const GEMINI_KEY = process.env.REACT_APP_GEMINI_KEY;
 const firebaseConfig = {
   apiKey: "AIzaSyCcGDsgb3ACgbjRAGPY66TWnsq1Y3rlIpw",
@@ -17,6 +14,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(()=>{});
 const provider = new GoogleAuthProvider();
 
 async function callGemini(prompt) {
@@ -256,7 +254,7 @@ const RIGHT_MSGS=["מעולה! הברווז קופץ! 🎉","נכון! הברו�
 const KEY="wmp_v_final";
 function loadS(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch{return null;}}
 function saveS(s){try{localStorage.setItem(KEY,JSON.stringify(s));}catch{}}
-function initS(){return{xp:0,correct:0,total:0,streak:0,bestStreak:0,lives:MAX_LIVES,resetAt:null,seen:{},aiWords:[],customWords:[],selectedLevel:"easy",lang:"he"};}
+function initS(){return{xp:0,correct:0,total:0,streak:0,bestStreak:0,lives:MAX_LIVES,resetAt:null,seen:{},aiWords:[],customWords:[],selectedLevel:"easy",lang:"he",knownWords:[],noteWords:[],dayStreak:0,weekStreak:0,monthStreak:0,lastPlayDate:null,lastPlayWeek:null,lastPlayMonth:null};}
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 function rnd(a){return a[Math.floor(Math.random()*a.length)];}
 function getLevel(xp){return[...LEVELS_XP].reverse().find(l=>xp>=l.xp)||LEVELS_XP[0];}
@@ -264,26 +262,80 @@ function getNext(xp){return LEVELS_XP.find(l=>l.xp>xp)||null;}
 function getDuck(c){return[...DUCK_STAGES].reverse().find(d=>c>=d.min)||DUCK_STAGES[0];}
 function lvlLabel(l,lang){if(lang==="en")return l==="easy"?"🟢 Easy":l==="medium"?"🟡 Medium":"🔴 Hard";return l==="easy"?"🟢 קל":l==="medium"?"🟡 בינוני":"🔴 קשה";}
 function fmt(ms){if(ms<=0)return"00:00:00";const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000),s=Math.floor((ms%60000)/1000);return`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;}
+function getTodayStr(){return new Date().toISOString().slice(0,10);}
+function getWeekStr(){const d=new Date();d.setDate(d.getDate()-d.getDay());return d.toISOString().slice(0,10);}
+function getMonthStr(){return new Date().toISOString().slice(0,7);}
+function calcStreaks(prev){
+  const today=getTodayStr();
+  if(prev.lastPlayDate===today)return{};
+  const prevDate=prev.lastPlayDate?new Date(prev.lastPlayDate):null;
+  const dayDiff=prevDate?Math.round((new Date(today)-prevDate)/86400000):null;
+  const newDayStreak=dayDiff===1?(prev.dayStreak||0)+1:1;
+  const todayWeek=getWeekStr();
+  const prevWeekDate=prev.lastPlayWeek?new Date(prev.lastPlayWeek):null;
+  const weekDiff=prevWeekDate?Math.round((new Date(todayWeek)-prevWeekDate)/604800000):null;
+  const newWeekStreak=prev.lastPlayWeek===todayWeek?(prev.weekStreak||1):weekDiff===1?(prev.weekStreak||0)+1:1;
+  const todayMonth=getMonthStr();
+  let newMonthStreak=1;
+  if(prev.lastPlayMonth&&prev.lastPlayMonth!==todayMonth){
+    const[py,pm]=prev.lastPlayMonth.split('-').map(Number);
+    const[ty,tm]=todayMonth.split('-').map(Number);
+    newMonthStreak=(ty-py)*12+(tm-pm)===1?(prev.monthStreak||0)+1:1;
+  }else if(prev.lastPlayMonth===todayMonth){newMonthStreak=prev.monthStreak||1;}
+  return{dayStreak:newDayStreak,weekStreak:newWeekStreak,monthStreak:newMonthStreak,lastPlayDate:today,lastPlayWeek:todayWeek,lastPlayMonth:todayMonth};
+}
 
 function DuckSVG({stage,mood,size}){
   const s=size||stage.size,col=stage.color,smart=stage.smart;
   const angry=mood==="angry",happy=mood==="happy";
   const glasses=smart>=40,cap=smart>=60,coat=smart>=75;
+  const bodyAnim=angry||happy?"none":"breathe 3.5s ease infinite";
+  const tailAnim=happy?"tailWag 0.22s ease infinite":angry?"tailWag 0.28s ease infinite":"tailWag 4s ease infinite";
+  const wingAnim=happy?"wingFlap 0.35s ease infinite":angry?"wingFlap 0.4s ease infinite":"none";
   return(
-    <svg width={s} height={s} viewBox="0 0 100 110" style={{filter:happy?"drop-shadow(0 0 8px gold)":angry?"drop-shadow(0 0 8px red)":"drop-shadow(0 0 4px rgba(255,255,255,0.2))",transition:"all 0.3s"}}>
+    <svg width={s} height={s} viewBox="0 0 100 115" style={{filter:happy?"drop-shadow(0 0 10px gold)":angry?"drop-shadow(0 0 10px red)":"drop-shadow(0 0 5px rgba(255,255,255,0.15))",transition:"all 0.3s",overflow:"visible"}}>
+      <ellipse cx="82" cy="69" rx="11" ry="6" fill={col} opacity="0.85"
+        style={{transformBox:"fill-box",transformOrigin:"15% 50%",animation:tailAnim}}/>
       {coat&&<><rect x="28" y="82" width="44" height="20" rx="4" fill="white" opacity="0.9"/><line x1="50" y1="82" x2="50" y2="102" stroke="#e2e8f0" strokeWidth="1"/><circle cx="43" cy="88" r="2" fill="#3b82f6"/><circle cx="43" cy="95" r="2" fill="#3b82f6"/></>}
-      <ellipse cx="50" cy="72" rx="30" ry="24" fill={angry?"#ef4444":col} opacity="0.95"/>
-      <ellipse cx="24" cy="75" rx="13" ry="9" fill={col} opacity="0.7" transform={happy?"rotate(-22 24 75)":angry?"rotate(22 24 75)":""} style={{transition:"transform 0.3s"}}/>
-      <ellipse cx="76" cy="75" rx="13" ry="9" fill={col} opacity="0.7" transform={happy?"rotate(22 76 75)":angry?"rotate(-22 76 75)":""} style={{transition:"transform 0.3s"}}/>
+      <ellipse cx="50" cy="72" rx="30" ry="24" fill={angry?"#ef4444":col} opacity="0.95"
+        style={{transformBox:"fill-box",transformOrigin:"center",animation:bodyAnim}}/>
+      <ellipse cx="22" cy="75" rx="13" ry="9" fill={col} opacity="0.75"
+        transform={happy?"rotate(-22 22 75)":angry?"rotate(22 22 75)":""}
+        style={{transition:"transform 0.3s",transformBox:"fill-box",transformOrigin:"80% 50%",animation:wingAnim}}/>
+      <ellipse cx="78" cy="75" rx="13" ry="9" fill={col} opacity="0.75"
+        transform={happy?"rotate(22 78 75)":angry?"rotate(-22 78 75)":""}
+        style={{transition:"transform 0.3s"}}/>
       <circle cx="50" cy="40" r="22" fill={angry?"#ef4444":col}/>
-      <ellipse cx={angry?"69":"68"} cy="43" rx="11" ry="6" fill="#f59e0b" transform={angry?"rotate(12 68 43)":happy?"rotate(-6 68 43)":""} style={{transition:"all 0.3s"}}/>
-      {glasses?(<><circle cx="41" cy="37" r="8" fill="none" stroke="#94a3b8" strokeWidth="1.5"/><circle cx="59" cy="37" r="8" fill="none" stroke="#94a3b8" strokeWidth="1.5"/><line x1="49" y1="37" x2="51" y2="37" stroke="#94a3b8" strokeWidth="1.5"/><circle cx="41" cy="37" r="5" fill="#1e1b4b"/><circle cx="59" cy="37" r="5" fill="#1e1b4b"/><circle cx="43" cy="35" r="1.5" fill="white"/><circle cx="61" cy="35" r="1.5" fill="white"/></>):(<><circle cx="41" cy="37" r="6" fill="#1a1a2e"/><circle cx="59" cy="37" r="6" fill="#1a1a2e"/><circle cx="43" cy="35" r="2" fill="white"/><circle cx="61" cy="35" r="2" fill="white"/></>)}
+      <ellipse cx={angry?"69":"68"} cy="43" rx="11" ry="6" fill="#f59e0b"
+        transform={angry?"rotate(12 68 43)":happy?"rotate(-6 68 43)":""}
+        style={{transition:"all 0.3s"}}/>
+      {glasses?(
+        <>
+          <circle cx="41" cy="37" r="8" fill="none" stroke="#94a3b8" strokeWidth="1.5"/>
+          <circle cx="59" cy="37" r="8" fill="none" stroke="#94a3b8" strokeWidth="1.5"/>
+          <line x1="49" y1="37" x2="51" y2="37" stroke="#94a3b8" strokeWidth="1.5"/>
+          <circle cx="41" cy="37" r="5" fill="#1e1b4b" className="duck-eye" style={{transformBox:"fill-box",transformOrigin:"center"}}/>
+          <circle cx="59" cy="37" r="5" fill="#1e1b4b" className="duck-eye-r" style={{transformBox:"fill-box",transformOrigin:"center"}}/>
+          <circle cx="43" cy="35" r="1.5" fill="white" className="duck-eye" style={{transformBox:"fill-box",transformOrigin:"50% 70%"}}/>
+          <circle cx="61" cy="35" r="1.5" fill="white" className="duck-eye-r" style={{transformBox:"fill-box",transformOrigin:"50% 70%"}}/>
+        </>
+      ):(
+        <>
+          <circle cx="41" cy="37" r="6" fill="#1a1a2e" className="duck-eye" style={{transformBox:"fill-box",transformOrigin:"center"}}/>
+          <circle cx="59" cy="37" r="6" fill="#1a1a2e" className="duck-eye-r" style={{transformBox:"fill-box",transformOrigin:"center"}}/>
+          <circle cx="43" cy="35" r="2" fill="white" className="duck-eye" style={{transformBox:"fill-box",transformOrigin:"50% 70%"}}/>
+          <circle cx="61" cy="35" r="2" fill="white" className="duck-eye-r" style={{transformBox:"fill-box",transformOrigin:"50% 70%"}}/>
+        </>
+      )}
       {angry&&<><line x1="35" y1="28" x2="47" y2="32" stroke="#7f1d1d" strokeWidth="2.5" strokeLinecap="round"/><line x1="53" y1="32" x2="65" y2="28" stroke="#7f1d1d" strokeWidth="2.5" strokeLinecap="round"/></>}
       {happy&&<><line x1="35" y1="32" x2="47" y2="28" stroke="#065f46" strokeWidth="2" strokeLinecap="round"/><line x1="53" y1="28" x2="65" y2="32" stroke="#065f46" strokeWidth="2" strokeLinecap="round"/></>}
       {cap&&<><rect x="32" y="17" width="36" height="6" rx="2" fill="#1e1b4b"/><polygon points="50,6 32,17 68,17" fill="#1e1b4b"/><line x1="68" y1="17" x2="73" y2="25" stroke="#f59e0b" strokeWidth="2"/><circle cx="73" cy="27" r="2.5" fill="#f59e0b"/></>}
-      <ellipse cx="41" cy="96" rx="7" ry="4" fill="#f59e0b"/><ellipse cx="59" cy="96" rx="7" ry="4" fill="#f59e0b"/>
-      {happy&&<><text x="12" y="28" fontSize="12">✨</text><text x="74" y="28" fontSize="12">⭐</text></>}
-      {angry&&<><text x="8" y="24" fontSize="10">💢</text><text x="80" y="24" fontSize="10">💢</text></>}
+      <ellipse cx="41" cy="97" rx="7" ry="4" fill="#f59e0b"
+        style={{transformBox:"fill-box",transformOrigin:"center top",animation:happy?"feetDance 0.28s ease infinite alternate":"none"}}/>
+      <ellipse cx="59" cy="97" rx="7" ry="4" fill="#f59e0b"
+        style={{transformBox:"fill-box",transformOrigin:"center top",animation:happy?"feetDance 0.28s 0.14s ease infinite alternate":"none"}}/>
+      {happy&&<><text x="10" y="26" fontSize="13">✨</text><text x="74" y="26" fontSize="13">⭐</text></>}
+      {angry&&<><text x="6" y="22" fontSize="11">💢</text><text x="80" y="22" fontSize="11">💢</text></>}
     </svg>
   );
 }
@@ -304,11 +356,19 @@ body{font-family:'Heebo',sans-serif;-webkit-tap-highlight-color:transparent;}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 @keyframes glow{0%,100%{box-shadow:0 0 15px rgba(255,255,255,0.07)}50%{box-shadow:0 0 30px rgba(255,255,255,0.2)}}
 @keyframes levelUp{0%{transform:scale(1)rotate(0)}25%{transform:scale(1.4)rotate(-15deg)}50%{transform:scale(1.5)rotate(15deg)}75%{transform:scale(1.2)rotate(-5deg)}100%{transform:scale(1)rotate(0)}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scaleX(1.04)scaleY(1.03)}}
+@keyframes tailWag{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(20deg)}}
+@keyframes wingFlap{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-35deg)}}
+@keyframes feetDance{0%{transform:translateY(0)}100%{transform:translateY(-4px)}}
+@keyframes blink{0%,78%,100%{transform:scaleY(1)}83%{transform:scaleY(0.08)}88%{transform:scaleY(1)}91%{transform:scaleY(0.08)}95%{transform:scaleY(1)}}
+.duck-eye{animation:blink 5s ease infinite;transform-box:fill-box;transform-origin:center;}
+.duck-eye-r{animation:blink 5s 0.18s ease infinite;transform-box:fill-box;transform-origin:center;}
 .btn{cursor:pointer;border:none;font-family:'Heebo',sans-serif;transition:all 0.2s;}
 .btn:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-2px);}
 .btn:active:not(:disabled){transform:translateY(0)scale(0.97);}
 input,select,textarea{font-family:'Heebo',sans-serif;}
 `;
+
 function BigTimer({resetAt,lang}){
   const[rem,setRem]=useState(Math.max(0,resetAt-Date.now()));
   useEffect(()=>{const t=setInterval(()=>setRem(Math.max(0,resetAt-Date.now())),1000);return()=>clearInterval(t);},[resetAt]);
@@ -412,6 +472,83 @@ function AddWordsScreen({state,setState,onBack}){
   );
 }
 
+function NotepadScreen({state,setState,onBack}){
+  const[enWord,setEnWord]=useState("");
+  const[heWord,setHeWord]=useState("");
+  const[note,setNote]=useState("");
+  const noteWords=state.noteWords||[];
+
+  function addWord(){
+    if(!enWord.trim()&&!heWord.trim())return;
+    const w={en:enWord.trim(),he:heWord.trim(),note:note.trim(),date:new Date().toLocaleDateString("he-IL")};
+    setState(prev=>{const n={...prev,noteWords:[...(prev.noteWords||[]),w]};saveS(n);return n;});
+    setEnWord("");setHeWord("");setNote("");
+  }
+
+  function removeWord(idx){
+    setState(prev=>{const nw=[...(prev.noteWords||[])];nw.splice(idx,1);const n={...prev,noteWords:nw};saveS(n);return n;});
+  }
+
+  function markLearned(idx){
+    setState(prev=>{
+      const nw=[...(prev.noteWords||[])];
+      const w=nw.splice(idx,1)[0];
+      const kw=prev.knownWords||[];
+      const already=kw.find(x=>x.en===w.en);
+      const n={...prev,noteWords:nw,knownWords:already?kw:[...kw,{en:w.en,he:w.he,category:"📒 פינקס",level:"custom"}]};
+      saveS(n);return n;
+    });
+  }
+
+  return(
+    <div style={{padding:"16px",maxWidth:460,margin:"0 auto"}}>
+      <div style={{display:"flex",gap:8,marginBottom:16,alignItems:"center"}}>
+        <button onClick={onBack} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",color:"#94a3b8",borderRadius:10,padding:"7px 13px",fontSize:13,fontWeight:700}}>🏠 בית</button>
+        <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>📒 הפינקס שלי</div>
+        {noteWords.length>0&&<span style={{background:"rgba(245,158,11,0.2)",color:"#f59e0b",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:700}}>{noteWords.length}</span>}
+      </div>
+      <div style={{background:"rgba(255,255,255,0.05)",borderRadius:18,padding:16,border:"1px solid rgba(245,158,11,0.2)",marginBottom:14}}>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",marginBottom:10,fontWeight:700}}>➕ הוסף מילה לזכור</div>
+        <input value={enWord} onChange={e=>setEnWord(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addWord()} placeholder="מילה באנגלית" style={{width:"100%",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:14,outline:"none",direction:"ltr",marginBottom:8}}/>
+        <input value={heWord} onChange={e=>setHeWord(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addWord()} placeholder="תרגום בעברית (אופציונלי)" style={{width:"100%",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:14,outline:"none",marginBottom:8}}/>
+        <input value={note} onChange={e=>setNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addWord()} placeholder="הערה (אופציונלי)" style={{width:"100%",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none",marginBottom:10}}/>
+        <button onClick={addWord} className="btn" style={{width:"100%",background:"linear-gradient(135deg,#f59e0b,#f472b6)",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:14,fontWeight:800}}>📌 הוסף לפינקס</button>
+      </div>
+      {noteWords.length===0?(
+        <div style={{textAlign:"center",padding:40,color:"rgba(255,255,255,0.3)",fontSize:14}}>
+          <div style={{fontSize:40,marginBottom:12}}>📒</div>
+          הפינקס ריק – הוסף מילים שאתה רוצה ללמוד!
+        </div>
+      ):(
+        <div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",fontWeight:800,marginBottom:8}}>📋 מילים לזכור ({noteWords.length})</div>
+          {[...noteWords].reverse().map((w,ri)=>{
+            const idx=noteWords.length-1-ri;
+            return(
+              <div key={idx} style={{background:"rgba(255,255,255,0.04)",borderRadius:14,padding:"12px 14px",border:"1px solid rgba(245,158,11,0.15)",marginBottom:8,animation:"fadeIn 0.3s ease"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3,flexWrap:"wrap"}}>
+                      <span style={{fontSize:15,fontWeight:900,color:"#fff",direction:"ltr"}}>{w.en||"—"}</span>
+                      {w.he&&<span style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>= {w.he}</span>}
+                    </div>
+                    {w.note&&<div style={{fontSize:12,color:"#f59e0b",marginBottom:3}}>📝 {w.note}</div>}
+                    <div style={{fontSize:10,color:"rgba(255,255,255,0.25)"}}>{w.date}</div>
+                  </div>
+                  <div style={{display:"flex",gap:5,marginRight:8,flexShrink:0}}>
+                    <button onClick={()=>markLearned(idx)} className="btn" style={{background:"rgba(74,222,128,0.15)",border:"none",borderRadius:8,padding:"5px 9px",color:"#4ade80",fontSize:11,fontWeight:700}}>✅</button>
+                    <button onClick={()=>removeWord(idx)} className="btn" style={{background:"rgba(239,68,68,0.15)",border:"none",borderRadius:8,padding:"5px 9px",color:"#f87171",fontSize:12}}>✕</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LoginScreen({onLogin}){
   const[loading,setLoading]=useState(false);
   const[error,setError]=useState("");
@@ -425,7 +562,9 @@ function LoginScreen({onLogin}){
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:28,background:"linear-gradient(135deg,#0f0c29,#302b63,#24243e)"}}>
       <style>{CSS}</style>
       <div style={{textAlign:"center",marginBottom:32}}>
-        <DuckSVG stage={DUCK_STAGES[0]} mood="idle" size={100}/>
+        <div style={{display:"inline-block",animation:"duckIdle 3s ease infinite"}}>
+          <DuckSVG stage={DUCK_STAGES[0]} mood="idle" size={100}/>
+        </div>
         <div style={{fontSize:32,fontWeight:900,marginTop:12,background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>WordMaster Pro</div>
         <div style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginTop:4}}>🔬 כיול • אופטיקה • אלקטרוניקה • פיזיקה</div>
       </div>
@@ -444,6 +583,9 @@ function LoginScreen({onLogin}){
 function ProfileScreen({user,state,setState,onBack,onLogout}){
   const lang=state.lang||"he";
   const duck=getDuck(state.correct);
+  const knownWords=state.knownWords||[];
+  const[wordSearch,setWordSearch]=useState("");
+  const filtered=knownWords.filter(w=>w.en.toLowerCase().includes(wordSearch.toLowerCase())||w.he.includes(wordSearch));
   return(
     <div style={{padding:"16px",maxWidth:460,margin:"0 auto"}}>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
@@ -455,13 +597,43 @@ function ProfileScreen({user,state,setState,onBack,onLogout}){
         <div style={{fontSize:14,color:"rgba(255,255,255,0.5)"}}>{user?.email}</div>
         <div style={{fontSize:11,color:duck.color,marginTop:4}}>{duck.name}</div>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+      <div style={{background:"rgba(255,255,255,0.04)",borderRadius:16,padding:16,border:"1px solid rgba(255,255,255,0.08)",marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:800,color:"rgba(255,255,255,0.7)",marginBottom:12}}>🔥 הרצפים שלי</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          {[{l:"📅 ימים",v:state.dayStreak||0,c:"#f59e0b"},{l:"📆 שבועות",v:state.weekStreak||0,c:"#4ade80"},{l:"🗓️ חודשים",v:state.monthStreak||0,c:"#a78bfa"}].map(s=>(
+            <div key={s.l} style={{background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"12px 8px",textAlign:"center",border:`1px solid ${s.c}33`}}>
+              <div style={{fontSize:28,fontWeight:900,color:s.c}}>{s.v}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:2}}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
         {[{l:"✅ נכונות",v:state.correct,c:"#4ade80"},{l:"🔥 רצף",v:state.streak,c:"#f59e0b"},{l:"⭐ שיא",v:state.bestStreak,c:"#a78bfa"},{l:"🎯 סה\"כ",v:state.total,c:"#22d3ee"},{l:"📚 מילים",v:Object.keys(state.seen).length,c:"#f472b6"},{l:"⚡ XP",v:state.xp,c:"#ef4444"}].map(s=>(
           <div key={s.l} style={{background:"rgba(255,255,255,0.05)",borderRadius:14,padding:"14px",textAlign:"center",border:`1px solid ${s.c}22`}}>
             <div style={{fontSize:24,fontWeight:900,color:s.c}}>{s.v}</div>
             <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:2}}>{s.l}</div>
           </div>
         ))}
+      </div>
+      <div style={{background:"rgba(255,255,255,0.04)",borderRadius:16,padding:16,border:"1px solid rgba(74,222,128,0.2)",marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:800,color:"#4ade80",marginBottom:10}}>✅ מילים שאני יודע ({knownWords.length})</div>
+        {knownWords.length>0?(
+          <>
+            <input value={wordSearch} onChange={e=>setWordSearch(e.target.value)} placeholder="חפש מילה..." style={{width:"100%",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 10px",color:"#fff",fontSize:13,outline:"none",marginBottom:8}}/>
+            <div style={{maxHeight:220,overflowY:"auto"}}>
+              {(wordSearch?filtered:[...knownWords].reverse()).map((w,i)=>(
+                <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 4px",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
+                  <span style={{fontSize:13,color:"#fff",fontWeight:700,direction:"ltr"}}>{w.en}</span>
+                  <span style={{fontSize:12,color:"rgba(255,255,255,0.45)"}}>{w.he}</span>
+                </div>
+              ))}
+              {wordSearch&&filtered.length===0&&<div style={{fontSize:12,color:"rgba(255,255,255,0.3)",textAlign:"center",padding:12}}>לא נמצאו תוצאות</div>}
+            </div>
+          </>
+        ):(
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",textAlign:"center",padding:12}}>ענה נכון על שאלות כדי לצבור מילים! 🎯</div>
+        )}
       </div>
       <div style={{background:"rgba(255,255,255,0.04)",borderRadius:16,padding:16,border:"1px solid rgba(255,255,255,0.08)",marginBottom:12}}>
         <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>🌐 שפת האפליקציה</div>
@@ -526,11 +698,12 @@ function NoLivesScreen({state,onHome,lang}){
   );
 }
 
-function HomeScreen({user,state,setState,onStart,onProfile,onAddWords,onReset}){
+function HomeScreen({user,state,setState,onStart,onProfile,onAddWords,onNotepad,onReset}){
   const lang=state.lang||"he";
   const level=getLevel(state.xp),nextLevel=getNext(state.xp);
   const duck=getDuck(state.correct);
   const customWords=state.customWords||[];
+  const noteWords=state.noteWords||[];
   const totalWords=ALL_BASE.length+(state.aiWords?.length||0)+customWords.length;
   const seen=Object.keys(state.seen).length;
   const xpPct=Math.min(100,((state.xp-level.xp)/((nextLevel?nextLevel.xp:level.xp+1000)-level.xp))*100);
@@ -553,6 +726,13 @@ function HomeScreen({user,state,setState,onStart,onProfile,onAddWords,onReset}){
         <div style={{fontSize:30,fontWeight:900,lineHeight:1,background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee,#4ade80,#f472b6)",backgroundSize:"300% 300%",animation:"rainbow 5s ease infinite",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>WordMaster Pro</div>
         <div style={{color:"rgba(255,255,255,0.45)",fontSize:12,marginTop:4}}>🔬 כיול • אופטיקה • אלקטרוניקה • פיזיקה</div>
       </div>
+      {(state.dayStreak>0||state.weekStreak>0||state.monthStreak>0)&&(
+        <div style={{display:"flex",gap:6,marginBottom:10,justifyContent:"center",flexWrap:"wrap"}}>
+          {state.dayStreak>0&&<div style={{background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:20,padding:"4px 12px",fontSize:12,color:"#f59e0b",fontWeight:800}}>📅 {state.dayStreak} ימים</div>}
+          {state.weekStreak>0&&<div style={{background:"rgba(74,222,128,0.15)",border:"1px solid rgba(74,222,128,0.3)",borderRadius:20,padding:"4px 12px",fontSize:12,color:"#4ade80",fontWeight:800}}>📆 {state.weekStreak} שבועות</div>}
+          {state.monthStreak>0&&<div style={{background:"rgba(167,139,250,0.15)",border:"1px solid rgba(167,139,250,0.3)",borderRadius:20,padding:"4px 12px",fontSize:12,color:"#a78bfa",fontWeight:800}}>🗓️ {state.monthStreak} חודשים</div>}
+        </div>
+      )}
       <div style={{background:"rgba(255,255,255,0.06)",borderRadius:16,padding:"12px 14px",border:"1px solid rgba(255,255,255,0.1)",marginBottom:10,animation:"glow 3s ease infinite"}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:6,alignItems:"center"}}>
           <span style={{color:"#fff",fontWeight:900,fontSize:14}}>{level.emoji} {level.name}</span>
@@ -604,10 +784,16 @@ function HomeScreen({user,state,setState,onStart,onProfile,onAddWords,onReset}){
           ))}
         </div>
       </div>
-      <button onClick={onAddWords} className="btn" style={{width:"100%",background:"rgba(34,211,238,0.1)",border:"1px solid rgba(34,211,238,0.35)",borderRadius:14,padding:"12px 16px",color:"#22d3ee",fontSize:14,fontWeight:800,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-        ➕ {lang==="en"?"Add Custom Words":"הוסף מילים ידנית עם AI"}
-        {customWords.length>0&&<span style={{background:"rgba(34,211,238,0.2)",borderRadius:20,padding:"2px 8px",fontSize:12}}>{customWords.length}</span>}
-      </button>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+        <button onClick={onAddWords} className="btn" style={{background:"rgba(34,211,238,0.1)",border:"1px solid rgba(34,211,238,0.35)",borderRadius:14,padding:"12px 10px",color:"#22d3ee",fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+          ➕ הוסף מילים
+          {customWords.length>0&&<span style={{background:"rgba(34,211,238,0.2)",borderRadius:20,padding:"1px 7px",fontSize:11}}>{customWords.length}</span>}
+        </button>
+        <button onClick={onNotepad} className="btn" style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.35)",borderRadius:14,padding:"12px 10px",color:"#f59e0b",fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+          📒 הפינקס
+          {noteWords.length>0&&<span style={{background:"rgba(245,158,11,0.2)",borderRadius:20,padding:"1px 7px",fontSize:11}}>{noteWords.length}</span>}
+        </button>
+      </div>
       <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",fontWeight:800,marginBottom:8}}>📚 {lang==="en"?"Choose Module":"בחר מודול"}</div>
       <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:12}}>
         <button onClick={()=>onStart("ALL")} className="btn" style={{background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee,#4ade80)",backgroundSize:"300% 300%",animation:"rainbow 4s ease infinite",borderRadius:14,padding:"14px 16px",color:"#fff",fontSize:14,fontWeight:900,display:"flex",justifyContent:"space-between",boxShadow:"0 4px 24px rgba(167,139,250,0.4)"}}>
@@ -668,7 +854,11 @@ function QuizScreen({category,state,setState,onHome,onBack}){
   const[showLevelUp,setShowLevelUp]=useState(false);
   const[loadingAI,setLoadingAI]=useState(false);
   const[aiStatus,setAIStatus]=useState("");
+  const[timeLeft,setTimeLeft]=useState(null);
+  const timerRef=useRef(null);
   const prevLevelRef=useRef(getLevel(state.xp).name);
+
+  const timerSecs=Math.min(12,3+Math.floor((qNum-1)/3));
 
   useEffect(()=>{
     if(state.resetAt&&Date.now()>=state.resetAt){setState(prev=>{const n={...prev,lives:MAX_LIVES,resetAt:null};saveS(n);return n;});}
@@ -705,6 +895,23 @@ function QuizScreen({category,state,setState,onHome,onBack}){
     setChosen(null);setMood("idle");setMsg("");
   },[cKey]);
 
+  useEffect(()=>{
+    clearInterval(timerRef.current);
+    if(chosen===null){setTimeLeft(null);return;}
+    let t=timerSecs;
+    setTimeLeft(t);
+    timerRef.current=setInterval(()=>{
+      t-=1;
+      setTimeLeft(t);
+      if(t<=0)clearInterval(timerRef.current);
+    },1000);
+    return()=>clearInterval(timerRef.current);
+  },[chosen]);
+
+  useEffect(()=>{
+    if(timeLeft===0)next();
+  },[timeLeft]);
+
   if(state.lives<=0&&state.resetAt&&Date.now()<state.resetAt)return<NoLivesScreen state={state} onHome={onHome} lang={lang}/>;
 
   const correct=dir==="en2he"?word.he:word.en;
@@ -727,7 +934,10 @@ function QuizScreen({category,state,setState,onHome,onBack}){
       const newLives=ok?prev.lives:Math.max(0,prev.lives-1);
       if(getLevel(newXP).name!==prevLevelRef.current){prevLevelRef.current=getLevel(newXP).name;setTimeout(()=>{setShowLevelUp(true);setTimeout(()=>setShowLevelUp(false),1500);},400);}
       const newResetAt=newLives===0&&!prev.resetAt?Date.now()+RESET_MS:prev.resetAt;
-      const n={...prev,total:prev.total+1,correct:prev.correct+(ok?1:0),streak:ok?prev.streak+1:0,bestStreak:ok?Math.max(prev.bestStreak,prev.streak+1):prev.bestStreak,xp:newXP,lives:newLives,resetAt:newResetAt,seen:ok?{...prev.seen,[word.en]:true}:prev.seen};
+      const kw=prev.knownWords||[];
+      const newKnownWords=ok&&!kw.find(w=>w.en===word.en)?[...kw,{en:word.en,he:word.he,category:word.category,level:word.level||selectedLevel}]:kw;
+      const streakUpdate=calcStreaks(prev);
+      const n={...prev,total:prev.total+1,correct:prev.correct+(ok?1:0),streak:ok?prev.streak+1:0,bestStreak:ok?Math.max(prev.bestStreak,prev.streak+1):prev.bestStreak,xp:newXP,lives:newLives,resetAt:newResetAt,seen:ok?{...prev.seen,[word.en]:true}:prev.seen,knownWords:newKnownWords,...streakUpdate};
       saveS(n);return n;
     });
     if(ok){setMood("happy");setMsg(rnd(RIGHT_MSGS));setXpPop(`+${xpGain} XP`);setTimeout(()=>setXpPop(null),1600);}
@@ -750,7 +960,7 @@ function QuizScreen({category,state,setState,onHome,onBack}){
         </div>
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:11,color:level.color,fontWeight:900}}>{level.emoji} {level.name} • {lvlLabel(selectedLevel,lang)}</div>
-          <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>שאלה #{qNum}</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>שאלה #{qNum} • ⏱{timerSecs}שנ</div>
         </div>
         <div style={{textAlign:"left"}}>
           <div style={{fontSize:13,color:"#f59e0b",fontWeight:900}}>🔥 {state.streak}</div>
@@ -804,11 +1014,24 @@ function QuizScreen({category,state,setState,onHome,onBack}){
         </div>
       )}
       {chosen!==null&&(
-        <div style={{display:"flex",gap:8,animation:"fadeIn 0.3s ease"}}>
-          <button onClick={()=>setShowExplain(true)} className="btn" style={{flex:1,background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.4)",borderRadius:12,padding:"12px 8px",color:"#a5b4fc",fontSize:13,fontWeight:700}}>🤖 {lang==="en"?"Explain":"הסבר"}</button>
-          <button onClick={next} className="btn" style={{flex:2,background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee)",backgroundSize:"200%",animation:"rainbow 3s ease infinite",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:15,fontWeight:900,boxShadow:"0 4px 20px rgba(244,114,182,0.4)"}}>
-            {lang==="en"?"Next →":"המשך ←"}
-          </button>
+        <div style={{animation:"fadeIn 0.3s ease"}}>
+          {timeLeft!==null&&timeLeft>0&&(
+            <div style={{marginBottom:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>ממשיך אוטומטית...</span>
+                <span style={{fontSize:14,fontWeight:900,color:timeLeft<=2?"#f87171":"#f59e0b"}}>{timeLeft}</span>
+              </div>
+              <div style={{height:5,background:"rgba(255,255,255,0.1)",borderRadius:99,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${(timeLeft/timerSecs)*100}%`,background:timeLeft<=2?"linear-gradient(90deg,#f87171,#f59e0b)":"linear-gradient(90deg,#a78bfa,#22d3ee)",borderRadius:99,transition:"width 1s linear"}}/>
+              </div>
+            </div>
+          )}
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setShowExplain(true)} className="btn" style={{flex:1,background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.4)",borderRadius:12,padding:"12px 8px",color:"#a5b4fc",fontSize:13,fontWeight:700}}>🤖 {lang==="en"?"Explain":"הסבר"}</button>
+            <button onClick={next} className="btn" style={{flex:2,background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee)",backgroundSize:"200%",animation:"rainbow 3s ease infinite",border:"none",borderRadius:12,padding:"12px",color:"#fff",fontSize:15,fontWeight:900,boxShadow:"0 4px 20px rgba(244,114,182,0.4)"}}>
+              {lang==="en"?"Next →":"המשך ←"}
+            </button>
+          </div>
         </div>
       )}
       {showExplain&&<ExplainModal word={word} onClose={()=>setShowExplain(false)} lang={lang}/>}
@@ -819,7 +1042,7 @@ function QuizScreen({category,state,setState,onHome,onBack}){
 export default function App(){
   const[user,setUser]=useState(null);
   const[authLoading,setAuthLoading]=useState(true);
-  const[state,setState]=useState(()=>loadS()||initS());
+  const[state,setState]=useState(()=>{const saved=loadS();return saved?{...initS(),...saved}:initS();});
   const[screen,setScreen]=useState("home");
   const[category,setCategory]=useState(null);
   const lang=state.lang||"he";
@@ -843,7 +1066,9 @@ export default function App(){
       <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0f0c29"}}>
         <style>{CSS}</style>
         <div style={{textAlign:"center"}}>
-          <div style={{fontSize:60,animation:"spin 1s linear infinite",display:"inline-block"}}>⚙️</div>
+          <div style={{display:"inline-block",animation:"duckIdle 2s ease infinite"}}>
+            <DuckSVG stage={DUCK_STAGES[2]} mood="idle" size={80}/>
+          </div>
           <div style={{color:"#a78bfa",marginTop:12,fontSize:14}}>WordMaster Pro טוען...</div>
         </div>
       </div>
@@ -856,10 +1081,11 @@ export default function App(){
     <div style={{minHeight:"100vh",background:bgMap[lv.name]||bgMap["מתחיל"],transition:"background 1.2s ease",fontFamily:"'Heebo',sans-serif",direction:lang==="he"?"rtl":"ltr",color:"#fff",overflowX:"hidden"}}>
       <style>{CSS}</style>
       <div style={{position:"fixed",inset:0,pointerEvents:"none",opacity:0.04,backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.9) 1px,transparent 1px)",backgroundSize:"28px 28px"}}/>
-      {screen==="home"&&<HomeScreen user={user} state={state} setState={setState} onStart={cat=>{setCategory(cat);setScreen("quiz");}} onProfile={()=>setScreen("profile")} onAddWords={()=>setScreen("addwords")} onReset={()=>{if(window.confirm(lang==="en"?"Delete all progress?":"למחוק הכל?")){const f=initS();setState(f);saveS(f);}}}/>}
+      {screen==="home"&&<HomeScreen user={user} state={state} setState={setState} onStart={cat=>{setCategory(cat);setScreen("quiz");}} onProfile={()=>setScreen("profile")} onAddWords={()=>setScreen("addwords")} onNotepad={()=>setScreen("notepad")} onReset={()=>{if(window.confirm(lang==="en"?"Delete all progress?":"למחוק הכל?")){const f=initS();setState(f);saveS(f);}}}/>}
       {screen==="quiz"&&<QuizScreen category={category} state={state} setState={setState} onHome={()=>setScreen("home")} onBack={()=>setScreen("home")}/>}
       {screen==="profile"&&<ProfileScreen user={user} state={state} setState={setState} onBack={()=>setScreen("home")} onLogout={async()=>{await signOut(auth);setUser(null);setScreen("home");}}/>}
       {screen==="addwords"&&<AddWordsScreen state={state} setState={setState} onBack={()=>setScreen("home")}/>}
+      {screen==="notepad"&&<NotepadScreen state={state} setState={setState} onBack={()=>setScreen("home")}/>}
     </div>
   );
 }
