@@ -602,6 +602,12 @@ body{font-family:'Heebo',sans-serif;-webkit-tap-highlight-color:transparent;}
 .btn:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-2px);}
 .btn:active:not(:disabled){transform:translateY(0)scale(0.97);}
 input,select,textarea{font-family:'Heebo',sans-serif;}
+@keyframes duckSomersault{0%{transform:translateY(0)rotate(0deg)scale(1)}20%{transform:translateY(-55px)rotate(72deg)scale(1.18)}40%{transform:translateY(-90px)rotate(144deg)scale(1.28)}60%{transform:translateY(-65px)rotate(216deg)scale(1.22)}80%{transform:translateY(-22px)rotate(288deg)scale(1.1)}100%{transform:translateY(0)rotate(360deg)scale(1)}}
+@keyframes letterPop{0%{opacity:0;transform:translateY(-28px)scale(2)rotate(-18deg);filter:blur(5px)}60%{opacity:1;transform:translateY(5px)scale(0.92)rotate(2deg);filter:blur(0)}80%{transform:translateY(-2px)scale(1.06)rotate(-1deg)}100%{opacity:1;transform:translateY(0)scale(1)rotate(0deg)}}
+@keyframes splashFadeOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.04)}}
+@keyframes duckThink{0%,100%{transform:rotate(-6deg)translateY(0)}50%{transform:rotate(6deg)translateY(-10px)}}
+@keyframes bubbleIn{0%{opacity:0;transform:scale(0.65)translateY(14px)}70%{opacity:1;transform:scale(1.04)translateY(-3px)}100%{opacity:1;transform:scale(1)translateY(0)}}
+@keyframes starDrift{0%{transform:translate(0,0)scale(1);opacity:0.6}50%{opacity:1}100%{transform:translate(var(--dx),var(--dy))scale(1.3);opacity:0}}
 `;
 
 function BigTimer({resetAt,lang}){
@@ -945,6 +951,88 @@ function SentenceScreen({state,setState,onHome,onBack}){
       )}
     </div>
   );
+}
+
+function SplashScreen({onDone}){
+  const[phase,setPhase]=useState(0);
+  const[out,setOut]=useState(false);
+  const doneCb=useRef(onDone);
+  doneCb.current=onDone;
+  useEffect(()=>{
+    const t1=setTimeout(()=>setPhase(1),920);
+    const t2=setTimeout(()=>setOut(true),2750);
+    const t3=setTimeout(()=>doneCb.current(),3100);
+    return()=>[t1,t2,t3].forEach(clearTimeout);
+  },[]);
+  const w1="WordMaster",w2=" Pro";
+  const chars=[...w1.split(""),...w2.split("")];
+  const sparkles=[
+    {x:"12%",y:"18%",dx:"20px",dy:"-30px",c:"#22d3ee",d:"0s"},
+    {x:"82%",y:"22%",dx:"-25px",dy:"-20px",c:"#a78bfa",d:"0.4s"},
+    {x:"20%",y:"78%",dx:"15px",dy:"25px",c:"#f472b6",d:"0.8s"},
+    {x:"75%",y:"70%",dx:"-18px",dy:"20px",c:"#fbbf24",d:"0.2s"},
+    {x:"50%",y:"10%",dx:"5px",dy:"-28px",c:"#34d399",d:"0.6s"},
+    {x:"90%",y:"50%",dx:"20px",dy:"10px",c:"#f472b6",d:"1s"},
+    {x:"8%",y:"50%",dx:"-20px",dy:"-10px",c:"#a78bfa",d:"1.2s"},
+    {x:"60%",y:"88%",dx:"10px",dy:"22px",c:"#22d3ee",d:"0.9s"},
+  ];
+  return(
+    <div style={{position:"fixed",inset:0,background:"linear-gradient(160deg,#08031a,#130830,#0a1535)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",zIndex:9999,animation:out?"splashFadeOut 0.45s ease forwards":"none",overflow:"hidden"}}>
+      <style>{CSS}</style>
+      {sparkles.map((s,i)=>(
+        <div key={i} style={{position:"absolute",left:s.x,top:s.y,width:6,height:6,borderRadius:"50%",background:s.c,animation:`starDrift 2.2s ${s.d} ease-out infinite`,opacity:0.7,"--dx":s.dx,"--dy":s.dy}}/>
+      ))}
+      <div style={{animation:phase===0?"duckSomersault 0.92s cubic-bezier(0.4,0,0.2,1)":"duckIdle 2.2s ease infinite",marginBottom:32,filter:"drop-shadow(0 0 24px rgba(167,139,250,0.7))"}}>
+        <DuckSVG stage={DUCK_STAGES[4]} mood="happy" size={112}/>
+      </div>
+      {phase>=1&&(
+        <div style={{textAlign:"center"}}>
+          <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:0,marginBottom:10}}>
+            {chars.map((ch,i)=>(
+              <span key={i} style={{
+                display:"inline-block",
+                fontSize:i>=w1.length?38:30,
+                fontWeight:900,
+                fontFamily:"'Heebo',sans-serif",
+                animation:`letterPop 0.42s ${i*0.065}s cubic-bezier(0.34,1.56,0.64,1) both`,
+                color:i<4?"#22d3ee":i<10?"#c4b5fd":"#fbbf24",
+                textShadow:i<4?"0 0 18px #22d3ee,0 0 38px rgba(34,211,238,0.35)":i<10?"0 0 18px #a78bfa,0 0 38px rgba(167,139,250,0.35)":"0 0 18px #fbbf24,0 0 38px rgba(251,191,36,0.35)",
+              }}>{ch===" "?" ":ch}</span>
+            ))}
+          </div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.38)",letterSpacing:3,textTransform:"uppercase",animation:"fadeIn 0.7s 1s both"}}>
+            📚 מילים טכניות &nbsp;•&nbsp; אנגלית ועברית
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+class ErrorBoundary extends React.Component{
+  constructor(p){super(p);this.state={err:false};}
+  static getDerivedStateFromError(){return{err:true};}
+  componentDidCatch(e,i){console.error("WordMaster crash:",e,i);}
+  render(){
+    if(!this.state.err)return this.props.children;
+    return(
+      <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#08031a,#130830,#0a1535)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Heebo',sans-serif",color:"#fff",textAlign:"center",padding:24,direction:"rtl"}}>
+        <style>{CSS}</style>
+        <div style={{animation:"duckThink 2.8s ease infinite",marginBottom:20,filter:"drop-shadow(0 0 22px rgba(167,139,250,0.55))"}}>
+          <DuckSVG stage={DUCK_STAGES[4]} mood="idle" size={148}/>
+        </div>
+        <div style={{background:"rgba(255,255,255,0.05)",border:"1.5px solid rgba(167,139,250,0.28)",borderRadius:22,padding:"20px 32px",marginBottom:20,animation:"bubbleIn 0.55s 0.15s cubic-bezier(0.34,1.56,0.64,1) both",maxWidth:340,position:"relative"}}>
+          <div style={{position:"absolute",top:-12,right:24,background:"rgba(167,139,250,0.15)",border:"1px solid rgba(167,139,250,0.3)",borderRadius:8,padding:"2px 10px",fontSize:11,color:"#a78bfa",fontWeight:800}}>הברווז מדבר</div>
+          <div style={{fontSize:30,fontWeight:900,marginBottom:6}}>אופס... 🤔</div>
+          <div style={{fontSize:16,color:"rgba(255,255,255,0.6)",lineHeight:1.65}}>נראה שאיבדנו את זה</div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.3)",marginTop:8}}>הברווז בטוח ימצא אותה בקרוב</div>
+        </div>
+        <button onClick={()=>window.location.reload()} style={{background:"linear-gradient(135deg,#a78bfa,#22d3ee)",border:"none",borderRadius:16,padding:"14px 40px",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 22px rgba(167,139,250,0.45)",animation:"fadeIn 0.5s 0.5s both"}}>
+          🔄 טען מחדש
+        </button>
+      </div>
+    );
+  }
 }
 
 function LoginScreen({onLogin}){
@@ -1566,7 +1654,8 @@ function QuizScreen({category,state,setState,onHome,onBack}){
   );
 }
 
-export default function App(){
+function App(){
+  const[showSplash,setShowSplash]=useState(()=>!sessionStorage.getItem("wmp_splash"));
   const[user,setUser]=useState(null);
   const[authLoading,setAuthLoading]=useState(true);
   const[state,setState]=useState(()=>{const saved=loadS();return saved?{...initS(),...saved}:initS();});
@@ -1587,6 +1676,8 @@ export default function App(){
     "מאסטר":"linear-gradient(160deg,#200122,#6f0000,#200122)",
   };
   const lv=getLevel(state.xp);
+
+  if(showSplash)return<SplashScreen onDone={()=>{sessionStorage.setItem("wmp_splash","1");setShowSplash(false);}}/>;
 
   if(authLoading){
     return(
@@ -1617,3 +1708,5 @@ export default function App(){
     </div>
   );
 }
+
+export default function Root(){return<ErrorBoundary><App/></ErrorBoundary>;}
