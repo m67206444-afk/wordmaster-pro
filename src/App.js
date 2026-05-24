@@ -312,9 +312,63 @@ const BASE_WORDS = {
       {en:"Implement rate limiting",he:"ממש הגבלת קצב",tip:"API rate limiting"},
     ]
   },
+  "🔭 מערכות EO/IR/RF": {
+    easy: [
+      {en:"FLIR",he:"מצלמת אינפרה-אדום לפני",tip:"Forward Looking Infrared"},
+      {en:"FOV",he:"שדה ראייה",tip:"Field of View — זווית הכיסוי של המצלמה"},
+      {en:"EO System",he:"מערכת אלקטרו-אופטית",tip:"מערכת המשלבת אלקטרוניקה ואופטיקה"},
+      {en:"IR Detector",he:"גלאי אינפרה-אדום",tip:"ממיר קרינת IR לאות חשמלי"},
+      {en:"Thermal Camera",he:"מצלמה תרמית",tip:"דמות אובייקטים לפי חום"},
+      {en:"Boresight",he:"ציר כיוון",tip:"יישור בין מרכז האופטיקה לציר המכני"},
+      {en:"Target Detection",he:"גילוי מטרה",tip:"זיהוי עצם מטרה על רקע"},
+      {en:"Night Vision",he:"ראייה לילית",tip:"גילוי בתנאי אפלה"},
+      {en:"Tracking",he:"מעקב",tip:"מעקב אוטומטי אחרי מטרה נעה"},
+      {en:"Gimbal",he:"ג'ימבל",tip:"פלטפורמה מייצבת לאופטיקה"},
+    ],
+    medium: [
+      {en:"MWIR",he:"אינפרה-אדום גלים בינוניים",tip:"Mid-Wave IR — 3–5 מיקרון"},
+      {en:"LWIR",he:"אינפרה-אדום גלים ארוכים",tip:"Long-Wave IR — 8–12 מיקרון"},
+      {en:"SWIR",he:"אינפרה-אדום גלים קצרים",tip:"Short-Wave IR — 1–2.5 מיקרון"},
+      {en:"NUC",he:"תיקון אי-אחידות",tip:"Non-Uniformity Correction"},
+      {en:"LRF",he:"מד טווח לייזר",tip:"Laser Range Finder"},
+      {en:"Detector Array",he:"מערך גלאים",tip:"מטריצת פיקסלים לחישת IR"},
+      {en:"Image Stabilization",he:"ייצוב תמונה",tip:"הפחתת רעידות בצילום"},
+      {en:"Seeker",he:"ראש מחפש",tip:"ראש כיוון של טיל"},
+      {en:"Designator",he:"מסמן לייזר",tip:"לייזר לסימון מטרה"},
+      {en:"EW",he:"לוחמה אלקטרונית",tip:"Electronic Warfare — הפרעה וסיוע"},
+    ],
+    hard: [
+      {en:"NEDT",he:"הפרש טמפרטורה שווה-רעש",tip:"Noise Equivalent Temperature Difference"},
+      {en:"MRTD",he:"הפרש טמפרטורה מינימלי הניתן לפתרון",tip:"Minimum Resolvable Temperature Difference"},
+      {en:"Adaptive Optics",he:"אופטיקה אדפטיבית",tip:"תיקון שגיאות אטמוספריות בזמן אמת"},
+      {en:"Hyperspectral Imaging",he:"הדמיה היפר-ספקטרלית",tip:"דימות בעשרות עד מאות ערוצי ספקטרום"},
+      {en:"Conformal Window",he:"חלון קונפורמי",tip:"חלון אופטי שאינו שטוח"},
+      {en:"Athermal Design",he:"עיצוב א-תרמי",tip:"ביצועים קבועים בטמפרטורות שונות"},
+      {en:"IMU",he:"יחידת מדידה אינרציאלית",tip:"Inertial Measurement Unit — גירוסקופ+מד-תאוצה"},
+      {en:"RCS",he:"חתך קידה רדארי",tip:"Radar Cross Section — עוצמת החזרה"},
+      {en:"ECCM",he:"אמצעי נגד אלקטרוני",tip:"Electronic Counter-Countermeasures"},
+      {en:"SAR",he:"מכ\"ם צמצם סינתטי",tip:"Synthetic Aperture Radar — הדמיה בטווח ארוך"},
+    ]
+  },
 };
 
-const CATEGORIES=Object.keys(BASE_WORDS);
+const SENTENCE_DATA=[
+  {en:"The sensor measures infrared radiation",he:"החיישן מודד קרינת אינפרה-אדום",level:"easy"},
+  {en:"The lens focuses the beam on the detector",he:"העדשה מקדת את הקרן על הגלאי",level:"easy"},
+  {en:"Calibration ensures accurate measurements",he:"כיול מבטיח מדידות מדויקות",level:"easy"},
+  {en:"The field of view defines the visible area",he:"שדה הראייה מגדיר את האזור הנראה",level:"easy"},
+  {en:"Dark current occurs without any light",he:"זרם האפלה מתרחש ללא אור",level:"easy"},
+  {en:"Full calibration includes radiometric and optical calibration",he:"כיול מלא כולל כיול רדיומטרי וכיול אופטי",level:"medium"},
+  {en:"The MTF characterizes the optical resolution of the system",he:"ה-MTF מאפיין את הרזולוציה האופטית של המערכת",level:"medium"},
+  {en:"Quantum efficiency determines detector sensitivity",he:"היעילות הקוונטית קובעת את רגישות הגלאי",level:"medium"},
+  {en:"The wavefront error affects image quality",he:"שגיאת חזית הגל משפיעה על איכות התמונה",level:"medium"},
+  {en:"The SNR ratio determines the minimum detectable signal",he:"יחס האות לרעש קובע את האות המינימלי הניתן לגילוי",level:"medium"},
+  {en:"The PSF describes the response of the optical system to a point source",he:"ה-PSF מתאר את תגובת המערכת האופטית למקור נקודתי",level:"hard"},
+  {en:"Stray light degrades image contrast and reduces the signal to noise ratio",he:"אור תועה פוגם בניגודיות התמונה ומפחית את יחס האות לרעש",level:"hard"},
+  {en:"NEDT is the minimum temperature difference detectable by the system",he:"NEDT הוא הפרש הטמפרטורה המינימלי הניתן לגילוי על ידי המערכת",level:"hard"},
+  {en:"Interferometric calibration measures wavefront aberrations with high accuracy",he:"כיול אינטרפרומטרי מודד סטיות חזית גל בדיוק גבוה",level:"hard"},
+  {en:"The integration time determines the amount of light collected by the detector",he:"זמן האינטגרציה קובע את כמות האור הנאסף על ידי הגלאי",level:"hard"},
+];
 const ALL_BASE=CATEGORIES.flatMap(cat=>["easy","medium","hard"].flatMap(lvl=>(BASE_WORDS[cat][lvl]||[]).map(w=>({...w,category:cat,level:lvl}))));
 const MAX_LIVES=10;
 const RESET_MS=4*60*60*1000;
@@ -733,6 +787,138 @@ function NotepadScreen({state,setState,onBack}){
   );
 }
 
+function SentenceScreen({state,setState,onHome,onBack}){
+  const lang=state.lang||"he";
+  const selectedLevel=state.selectedLevel||"easy";
+  const pool=SENTENCE_DATA.filter(s=>s.level===selectedLevel);
+  const src=pool.length?pool:SENTENCE_DATA;
+  const[word,setWord]=useState(()=>rnd(src));
+  const[selected,setSelected]=useState([]);
+  const[available,setAvailable]=useState([]);
+  const[result,setResult]=useState(null);
+  const[qNum,setQNum]=useState(1);
+  const[xpPop,setXpPop]=useState(null);
+  const[msg,setMsg]=useState("");
+  const[cardKey,setCardKey]=useState(0);
+  const duck=getDuck(state.correct);
+  const level=getLevel(state.xp);
+  const acc=state.total>0?Math.round((state.correct/state.total)*100):0;
+
+  useEffect(()=>{
+    const correctWords=word.he.split(' ').map((w,i)=>({w,id:`c${i}`}));
+    const allOtherWords=SENTENCE_DATA.filter(s=>s.en!==word.en).flatMap(s=>s.he.split(' '));
+    const unique=[...new Set(allOtherWords)].filter(w=>!word.he.split(' ').includes(w));
+    const distractors=shuffle(unique).slice(0,4).map((w,i)=>({w,id:`d${i}`}));
+    setAvailable(shuffle([...correctWords,...distractors]));
+    setSelected([]);setResult(null);setMsg("");setXpPop(null);
+  },[cardKey]);
+
+  function selectWord(item){if(result!==null)return;setAvailable(p=>p.filter(x=>x.id!==item.id));setSelected(p=>[...p,item]);}
+  function unselectWord(item){if(result!==null)return;setSelected(p=>p.filter(x=>x.id!==item.id));setAvailable(p=>[...p,item]);}
+
+  function checkAnswer(){
+    const built=selected.map(x=>x.w).join(' ');
+    const ok=built===word.he;
+    const base=selectedLevel==="hard"?25:selectedLevel==="medium"?15:10;
+    const xpGain=ok?base:0;
+    playSound(ok?"correct":"wrong");
+    setResult(ok?"correct":"wrong");
+    setMsg(ok?rnd(RIGHT_MSGS):rnd(WRONG_MSGS));
+    if(ok&&xpGain>0){setXpPop(`+${xpGain} XP`);setTimeout(()=>setXpPop(null),1600);}
+    setState(prev=>{
+      const newLives=ok?prev.lives:Math.max(0,prev.lives-1);
+      const streakUpdate=calcStreaks(prev);
+      const n={...prev,total:prev.total+1,correct:prev.correct+(ok?1:0),streak:ok?prev.streak+1:0,bestStreak:ok?Math.max(prev.bestStreak,prev.streak+1):prev.bestStreak,xp:prev.xp+xpGain,lives:newLives,resetAt:newLives===0&&!prev.resetAt?Date.now()+RESET_MS:prev.resetAt,seen:ok?{...prev.seen,[word.en]:true}:prev.seen,...streakUpdate};
+      saveS(n);return n;
+    });
+  }
+
+  function next(){
+    let w;do{w=rnd(src);}while(w.en===word.en&&src.length>1);
+    setWord(w);setQNum(q=>q+1);setCardKey(k=>k+1);
+  }
+
+  if(state.lives<=0&&state.resetAt&&Date.now()<state.resetAt)return<NoLivesScreen state={state} onHome={onHome} lang={lang}/>;
+
+  return(
+    <div style={{padding:"12px",maxWidth:460,margin:"0 auto"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={onHome} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",color:"#94a3b8",borderRadius:9,padding:"6px 11px",fontSize:16}}>🏠</button>
+          <button onClick={onBack} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",color:"#94a3b8",borderRadius:9,padding:"6px 11px",fontSize:13,fontWeight:700}}>←</button>
+        </div>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:11,color:level.color,fontWeight:900}}>{level.emoji} 📝 בניית משפטים</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>שאלה #{qNum} • {lvlLabel(selectedLevel,lang)}</div>
+        </div>
+        <div style={{textAlign:"left"}}>
+          <div style={{fontSize:13,color:"#f59e0b",fontWeight:900}}>🔥 {state.streak}</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>{acc}%</div>
+        </div>
+      </div>
+      <div style={{display:"flex",gap:3,justifyContent:"center",marginBottom:10,background:"rgba(0,0,0,0.22)",borderRadius:12,padding:"7px 12px",border:"1px solid rgba(255,255,255,0.08)"}}>
+        {Array.from({length:MAX_LIVES}).map((_,i)=>(
+          <div key={i} style={{width:20,height:20,opacity:i<state.lives?1:0.12,filter:i<state.lives?"none":"grayscale(1)",transition:"all 0.5s"}}>
+            <DuckSVG stage={DUCK_STAGES[0]} mood="idle" size={20}/>
+          </div>
+        ))}
+      </div>
+      <div style={{textAlign:"center",marginBottom:8,position:"relative",minHeight:duck.size+30}}>
+        <div style={{display:"inline-block",animation:result==="correct"?"duckHappy 0.5s ease 3":result==="wrong"?"duckAngry 0.3s ease 4":"duckIdle 3s ease infinite"}}>
+          <DuckSVG stage={duck} mood={result==="correct"?"happy":result==="wrong"?"angry":"idle"} size={duck.size}/>
+        </div>
+        {xpPop&&<div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",fontSize:20,fontWeight:900,color:"#4ade80",animation:"xpFloat 1.6s ease forwards",pointerEvents:"none"}}>{xpPop}</div>}
+        {msg&&<div style={{fontSize:13,fontWeight:700,color:result==="correct"?"#4ade80":"#f87171",marginTop:2,animation:"fadeIn 0.3s ease"}}>{msg}</div>}
+      </div>
+      <div style={{background:"rgba(255,255,255,0.05)",borderRadius:18,padding:"14px 16px",marginBottom:12,textAlign:"center",border:"1px solid rgba(255,255,255,0.1)",animation:"slideUp 0.35s ease"}}>
+        <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",letterSpacing:2,marginBottom:8,fontWeight:700}}>📝 בנה את התרגום העברי</div>
+        <div style={{fontSize:17,fontWeight:800,color:"#fff",direction:"ltr",lineHeight:1.5}}>"{word.en}"</div>
+      </div>
+      <div style={{background:result==="correct"?"rgba(74,222,128,0.08)":result==="wrong"?"rgba(248,113,113,0.08)":"rgba(255,255,255,0.04)",border:`2px dashed ${result==="correct"?"#4ade80":result==="wrong"?"#f87171":"rgba(255,255,255,0.2)"}`,borderRadius:14,padding:"12px",minHeight:56,marginBottom:12,display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",justifyContent:selected.length?"flex-end":"center",direction:"rtl",transition:"all 0.3s"}}>
+        {selected.length===0&&<div style={{color:"rgba(255,255,255,0.2)",fontSize:12}}>← לחץ מילים למטה לבנות את המשפט</div>}
+        {selected.map(item=>(
+          <button key={item.id} onClick={()=>unselectWord(item)} disabled={result!==null} className="btn" style={{background:result==="correct"?"rgba(74,222,128,0.2)":result==="wrong"?"rgba(248,113,113,0.15)":"rgba(34,211,238,0.15)",border:`1px solid ${result==="correct"?"#4ade80":result==="wrong"?"#f87171":"#22d3ee"}`,borderRadius:20,padding:"5px 12px",color:result==="correct"?"#4ade80":result==="wrong"?"#f87171":"#22d3ee",fontSize:14,fontWeight:700}}>
+            {item.w}
+          </button>
+        ))}
+      </div>
+      {result==="wrong"&&(
+        <div style={{background:"rgba(74,222,128,0.06)",border:"1px solid rgba(74,222,128,0.25)",borderRadius:12,padding:"10px 14px",marginBottom:10,animation:"fadeIn 0.3s ease"}}>
+          <div style={{fontSize:11,color:"#4ade80",fontWeight:800,marginBottom:6}}>✅ המשפט הנכון:</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4,direction:"rtl"}}>
+            {word.he.split(' ').map((w,i)=>(
+              <span key={i} style={{background:"rgba(74,222,128,0.15)",borderRadius:20,padding:"4px 12px",color:"#4ade80",fontSize:14,fontWeight:700}}>{w}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {result===null&&(
+        <div style={{background:"rgba(0,0,0,0.2)",borderRadius:14,padding:"12px",marginBottom:12,border:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginBottom:8,textAlign:"center"}}>בחר מילים לבניית המשפט</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",direction:"rtl"}}>
+            {available.map(item=>(
+              <button key={item.id} onClick={()=>selectWord(item)} className="btn" style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.14)",borderRadius:20,padding:"7px 14px",color:"#e2e8f0",fontSize:14,fontWeight:700}}>
+                {item.w}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <div style={{display:"flex",gap:8}}>
+        {result===null?(
+          <button onClick={checkAnswer} disabled={selected.length===0} className="btn" style={{flex:1,background:selected.length>0?"linear-gradient(135deg,#4ade80,#22d3ee)":"rgba(255,255,255,0.04)",border:selected.length>0?"none":"1px solid rgba(255,255,255,0.1)",borderRadius:12,padding:"13px",color:selected.length>0?"#1a1a2e":"rgba(255,255,255,0.25)",fontSize:15,fontWeight:900}}>
+            ✓ בדוק תשובה
+          </button>
+        ):(
+          <button onClick={next} className="btn" style={{flex:1,background:"linear-gradient(135deg,#f472b6,#a78bfa,#22d3ee)",backgroundSize:"200%",animation:"rainbow 3s ease infinite",border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:15,fontWeight:900,boxShadow:"0 4px 20px rgba(244,114,182,0.4)"}}>
+            {lang==="en"?"Next →":"המשך ←"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function LoginScreen({onLogin}){
   const[loading,setLoading]=useState(false);
   const[error,setError]=useState("");
@@ -923,7 +1109,7 @@ function NoLivesScreen({state,onHome,lang}){
   );
 }
 
-function HomeScreen({user,state,setState,onStart,onProfile,onAddWords,onNotepad,onReset}){
+function HomeScreen({user,state,setState,onStart,onSentences,onProfile,onAddWords,onNotepad,onReset}){
   const lang=state.lang||"he";
   const level=getLevel(state.xp),nextLevel=getNext(state.xp);
   const duck=getDuck(state.correct);
@@ -1025,6 +1211,16 @@ function HomeScreen({user,state,setState,onStart,onProfile,onAddWords,onNotepad,
           <span>⚡ {lang==="en"?"All Modules":"כל המודולים"}</span>
           <span style={{fontSize:11,opacity:0.9}}>{totalWords} {lang==="en"?"words":"מילים"}</span>
         </button>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+          <button onClick={()=>onSentences()} className="btn" style={{background:"rgba(74,222,128,0.08)",border:"1px solid rgba(74,222,128,0.4)",borderRadius:12,padding:"11px 14px",color:"#4ade80",display:"flex",flexDirection:"column",alignItems:"center",gap:3,fontWeight:700,fontSize:13}}>
+            <span>📝 בניית משפטים</span>
+            <span style={{fontSize:10,opacity:0.6}}>{SENTENCE_DATA.length} משפטים</span>
+          </button>
+          <button onClick={()=>onStart("🔭 מערכות EO/IR/RF")} className="btn" style={{background:"rgba(167,139,250,0.08)",border:"1px solid rgba(167,139,250,0.4)",borderRadius:12,padding:"11px 14px",color:"#a78bfa",display:"flex",flexDirection:"column",alignItems:"center",gap:3,fontWeight:700,fontSize:13}}>
+            <span>🔭 מונחי EO/IR/RF</span>
+            <span style={{fontSize:10,opacity:0.6}}>30 מונחים</span>
+          </button>
+        </div>
         {customWords.length>0&&(
           <button onClick={()=>onStart("CUSTOM")} className="btn" style={{background:"rgba(34,211,238,0.08)",border:"1px solid rgba(34,211,238,0.4)",borderRadius:12,padding:"11px 14px",color:"#22d3ee",display:"flex",justifyContent:"space-between",alignItems:"center",fontWeight:700,fontSize:13}}>
             <span>➕ המילים שהוספתי</span>
@@ -1361,8 +1557,9 @@ export default function App(){
     <div style={{minHeight:"100vh",background:bgMap[lv.name]||bgMap["מתחיל"],transition:"background 1.2s ease",fontFamily:"'Heebo',sans-serif",direction:lang==="he"?"rtl":"ltr",color:"#fff",overflowX:"hidden"}}>
       <style>{CSS}</style>
       <div style={{position:"fixed",inset:0,pointerEvents:"none",opacity:0.04,backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.9) 1px,transparent 1px)",backgroundSize:"28px 28px"}}/>
-      {screen==="home"&&<HomeScreen user={user} state={state} setState={setState} onStart={cat=>{setCategory(cat);setScreen("quiz");}} onProfile={()=>setScreen("profile")} onAddWords={()=>setScreen("addwords")} onNotepad={()=>setScreen("notepad")} onReset={()=>{if(window.confirm(lang==="en"?"Delete all progress?":"למחוק הכל?")){const f=initS();setState(f);saveS(f);}}}/>}
+      {screen==="home"&&<HomeScreen user={user} state={state} setState={setState} onStart={cat=>{setCategory(cat);setScreen("quiz");}} onSentences={()=>setScreen("sentences")} onProfile={()=>setScreen("profile")} onAddWords={()=>setScreen("addwords")} onNotepad={()=>setScreen("notepad")} onReset={()=>{if(window.confirm(lang==="en"?"Delete all progress?":"למחוק הכל?")){const f=initS();setState(f);saveS(f);}}}/>}
       {screen==="quiz"&&<QuizScreen category={category} state={state} setState={setState} onHome={()=>setScreen("home")} onBack={()=>setScreen("home")}/>}
+      {screen==="sentences"&&<SentenceScreen state={state} setState={setState} onHome={()=>setScreen("home")} onBack={()=>setScreen("home")}/>}
       {screen==="profile"&&<ProfileScreen user={user} state={state} setState={setState} onBack={()=>setScreen("home")} onLogout={async()=>{await signOut(auth);setUser(null);setScreen("home");}}/>}
       {screen==="addwords"&&<AddWordsScreen state={state} setState={setState} onBack={()=>setScreen("home")}/>}
       {screen==="notepad"&&<NotepadScreen state={state} setState={setState} onBack={()=>setScreen("home")}/>}
