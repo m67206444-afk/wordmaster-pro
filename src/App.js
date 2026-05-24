@@ -369,6 +369,7 @@ const SENTENCE_DATA=[
   {en:"Interferometric calibration measures wavefront aberrations with high accuracy",he:"כיול אינטרפרומטרי מודד סטיות חזית גל בדיוק גבוה",level:"hard"},
   {en:"The integration time determines the amount of light collected by the detector",he:"זמן האינטגרציה קובע את כמות האור הנאסף על ידי הגלאי",level:"hard"},
 ];
+const CATEGORIES=Object.keys(BASE_WORDS);
 const ALL_BASE=CATEGORIES.flatMap(cat=>["easy","medium","hard"].flatMap(lvl=>(BASE_WORDS[cat][lvl]||[]).map(w=>({...w,category:cat,level:lvl}))));
 const MAX_LIVES=10;
 const RESET_MS=4*60*60*1000;
