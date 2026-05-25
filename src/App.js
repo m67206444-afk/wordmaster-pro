@@ -1446,6 +1446,221 @@ function AvatarSelectModal({state,setState,onClose}){
   );
 }
 
+const KNOWLEDGE_BASE=[
+  {id:"analog",icon:"〰️",color:"#f472b6",name:"אלקטרוניקה תקבילית",
+   hook:"עולם האותות הרציפים — הממשק בין הפיזיקה לאלקטרוניקה",
+   sections:[
+     {h:"מהי אלקטרוניקה תקבילית?",t:"אלקטרוניקה תקבילית (Analog Electronics) עוסקת בעיבוד אותות חשמליים המשתנים באופן רציף לאורך הזמן. האות התקבילי מייצג כמויות פיזיות כגון קול, טמפרטורה, לחץ ואור — וכל גוון בגל נושא מידע. בניגוד לאלקטרוניקה ספרתית שעובדת ב-0 ו-1 בלבד, כאן ערכי הביניים הם בעלי משמעות מלאה."},
+     {h:"חוקי הבסיס",items:["חוק אוהם: V = I × R — המתח שווה לזרם כפול ההתנגדות","חוק KVL (קירכהוף למתחות): סכום המתחות בלולאה סגורה = 0","חוק KCL (קירכהוף לזרמות): סכום הזרמים בצומת = 0","הספק: P = V × I = I²R = V²/R"]},
+     {h:"מגבר פעולה — Op-Amp",t:"המגבר הפעולה (Operational Amplifier) הוא אבן הבניין המרכזית של האלקטרוניקה התקבילית. מדובר במעגל משולב עם שתי כניסות דיפרנציאליות ורווח פתוח גבוה מאד (עד 10⁶). בעזרת משוב שלילי ניתן לממש: מגברים בדיוק גבוה, מסננים אקטיביים, ממירי מתח-זרם, אינטגרטורים, דיפרנציאטורים, ממשקי חיישנים ומחברים. פרמטרים מרכזיים: CMRR (דחיית מצב משותף), עכבת כניסה גבוהה, רוחב סרט GBW, Slew Rate."},
+     {h:"מסננים (Filters)",items:["LPF — מסנן מעביר נמוכים: מעביר תדרים מתחת לתדר חיתוך fc","HPF — מסנן מעביר גבוהים: מעביר תדרים מעל fc","BPF — מסנן מעביר רצועה: מעביר טווח תדרים ספציפי","Notch Filter: חוסם תדר יחיד (לדוגמה: רעש רשת 50 Hz)","Butterworth/Chebyshev/Bessel: סוגי פולינומים השולטים בצורת המסנן"]},
+     {h:"יישומים מרכזיים",t:"מגברי שמע ומוסיקה, ממשקי חיישנים (PT100, תרמוקפלים, מד-לחץ), מסננים להורדת רעש, מנעול פאזה (PLL) להסנכרון תדרים, מגברי מדידה (Instrumentation Amp) ברמת דיוק μV, וממשקי ADC/DAC לגישור לעולם הדיגיטלי."}
+   ],
+   terms:["Op-Amp","KVL","KCL","LPF","HPF","BPF","CMRR","Slew Rate","GBW","Butterworth","Chebyshev","PLL","Instrumentation Amp"]
+  },
+  {id:"digital",icon:"💻",color:"#22d3ee",name:"אלקטרוניקה ספרתית",
+   hook:"לוגיקה בינארית, שערים ומחשבים — הבסיס של כל מערכת מודרנית",
+   sections:[
+     {h:"המערכת הבינארית",t:"אלקטרוניקה ספרתית מיוצגת על ידי שני מצבים: '0' (מתח נמוך, בדרך-כלל 0 V) ו-'1' (מתח גבוה, כגון 3.3 V או 5 V). מייצוג זה מתאים לרכיבים כגון טרנזיסטורים הפועלים כמתגים. אלגברת בוליאן (George Boole, 1854) מספקת את המסגרת המתמטית לעיבוד מידע בינארי."},
+     {h:"שערים לוגיים",items:["AND: פלט 1 רק כאשר שני הכניסות הן 1","OR: פלט 1 כאשר לפחות כניסה אחת היא 1","NOT: היפוך — 0 הופך ל-1 ולהיפך","NAND / NOR: שערים אוניברסלים — כל פונקציה לוגית ניתנת לביצוע בעזרתם","XOR: פלט 1 כאשר הכניסות שונות זו מזו"]},
+     {h:"לוגיקה רצפית — Flip-Flops",t:"בניגוד למעגלים קומבינטוריים, מעגלים רצפיים מחזיקים זיכרון. ה-Flip-Flop הוא יחידת הזיכרון הבסיסית: D-FF, JK-FF, SR-FF, T-FF. מניין (Counter), רשומת הזזה (Shift Register) ומכונות מצב (FSM) בנויים מ-Flip-Flops. שעון מסנכרן את המערכת."},
+     {h:"FPGA ו-CPLD",t:"מכשירים לוגיים הניתנים לתכנות (Programmable Logic Devices). ה-FPGA (שדה-שערים מתוכנת) מכיל מאות אלפי תאים לוגיים הניתנים לחיבור מחדש דרך תוכנה. מתוכנת ב-VHDL או Verilog. נמצא בשימוש ב: אבות-טיפוס של IC, עיבוד אות בזמן אמת, תקשורת ובינה מלאכותית."},
+     {h:"משפחות לוגיות",items:["TTL (Transistor-Transistor Logic): מהירה, צריכת הספק בינונית","CMOS: צריכת הספק נמוכה מאד, סטנדרט בתעשייה","ECL (Emitter-Coupled Logic): מהירה ביותר אך צורכת הספק רב","LVDS: לוגיקה דיפרנציאלית למהירויות גבוהות"]}
+   ],
+   terms:["TTL","CMOS","FPGA","VHDL","Verilog","Flip-Flop","FSM","MUX","DEMUX","ALU","MSI","LSI","VLSI","JTAG"]
+  },
+  {id:"passive",icon:"🔩",color:"#fb923c",name:"רכיבים פסיביים",
+   hook:"נגדים, קבלים, סלילים — הלבנים הראשוניות של כל מעגל",
+   sections:[
+     {h:"מהם רכיבים פסיביים?",t:"רכיבים פסיביים אינם דורשים מקור אנרגיה חיצוני לפעולתם, ואינם מגבירים אות (כלפי חוץ). שלושת הרכיבים הפסיביים הבסיסיים הם: נגד (Resistor), קבל (Capacitor) וסליל (Inductor). הם שולטים בזרימת אנרגיה ולא מייצרים אותה."},
+     {h:"נגד (Resistor)",items:["מגביל זרם ומומיר חשמל לחום","סוגים: פחמן, סרט מתכת, חוט כרוך (Wirewound), SMD","פרמטרים: ערך (Ω), סבילות (Tolerance ±1% ±5%), הספק מקסימלי (W)","שימושים: חוטי מתח (Voltage Divider), הגבלת זרם ל-LED, Pull-up/Pull-down"]},
+     {h:"קבל (Capacitor)",items:["מאחסן מטען חשמלי: Q = C × V","סוגים: קרמי (MLCC), אלקטרוליטי, טנטלום, פולי-פרופילן","פרמטרים: קיבול (F), מתח עבודה מקסימלי, ESR (התנגדות טורית), דיאלקטרי","שימושים: סינון רעש מקוו, אחסון אנרגיה, קישור AC, PLL, VCO"]},
+     {h:"סליל (Inductor) ושנאי",items:["מאחסן אנרגיה בשדה מגנטי: E = ½LI²","מסנן תדרים גבוהים, ממיר הספק (Boost/Buck)","שנאי (Transformer): ממיר רמות מתח, בידוד גלווני","מעגל LC: תהודה בתדר f = 1/(2π√LC)"]},
+     {h:"גורמי איכות",t:"גורם האיכות Q מגדיר את יעילות הרכיב. קבל אידיאלי אינו מפזר הספק; בפועל ESR (Equivalent Series Resistance) גורם להפסד. סליל אידיאלי אינו מוליך DC; בפועל DCR (DC Resistance) ומגבלות ליבה עצמן. לכן הבחירה הנכונה של רכיבים קריטית לביצוע מעגל."}
+   ],
+   terms:["ESR","DCR","Q-factor","Tolerance","SMD","MLCC","Tantalum","Wirewound","Pull-up","Bypass Cap","LC resonance","Decoupling"]
+  },
+  {id:"active",icon:"⚡",color:"#facc15",name:"רכיבים אקטיביים ומוליכים למחצה",
+   hook:"טרנזיסטורים, דיודות וחומרים מוליכים למחצה — מנוע המהפכה הדיגיטלית",
+   sections:[
+     {h:"מוליכים למחצה",t:"חומרים מוליכים למחצה (כגון סיליקון, גרמניום, GaAs) מצויים בין מוליכים (מתכות) ומבודדים (פלסטיק). על ידי הכנסת אטומים זרים (Doping) ניתן לשלוט בהולכת החשמל: שיתוף אלקטרונים יוצר חומר מסוג N (עודף אלקטרונים) ויצירת 'חורים' יוצרת חומר מסוג P."},
+     {h:"דיודה (Diode)",items:["מפגש PN: מוליך בכיוון קדימה (Forward), חוסם בכיוון הפוך (Reverse)","דיודת זנר: מייצבת מתח בנקודת תמוטה (Breakdown Voltage)","דיודת שוטקי: מהירה עם נפילת מתח נמוכה (0.2–0.4 V)","LED (דיודת פליטת אור): ממירה אנרגיה חשמלית לאור גלוי או IR","PIN Diode: מהירה ומשמשת במעגלי RF ואופטיקה"]},
+     {h:"טרנזיסטור דו-קוטבי — BJT",t:"טרנזיסטור BJT (Bipolar Junction Transistor) מורכב משלוש שכבות: Emitter, Base, Collector. הזרם הקטן בבסיס שולט בזרם הגדול בקולקטור ביחס β (hFE). סוגים: NPN ו-PNP. יישומים: מגברי אות, מתגים דיגיטלים, מייצבי זרם."},
+     {h:"MOSFET — טרנזיסטור שדה",t:"MOSFET (Metal-Oxide-Semiconductor Field-Effect Transistor) הוא הרכיב הנפוץ ביותר בעולם. המתח על שער ה-Gate שולט על זרם Drain-Source. NMOS: פועל במתח Gate גבוה. PMOS: פועל במתח Gate נמוך. CMOS = NMOS + PMOS: צריכת הספק נמוכה מאד במצב סטטי. FinFET: טרנזיסטור תלת-ממדי בתהליכי 7nm ומטה."},
+     {h:"מנהרת JFET ואפקט שדה",items:["JFET: שולט בזרם דרך מעבר PN","Pinch-off voltage: מתח שמפסיק את הזרם","Depletion-mode vs Enhancement-mode","IGBT: שילוב BJT+MOSFET לאלקטרוניקת הספק"]}
+   ],
+   terms:["BJT","MOSFET","JFET","IGBT","FinFET","NPN","PNP","Beta","Early Effect","Pinch-off","Breakdown","Schottky","Zener","LED","GaAs","SiC","GaN"]
+  },
+  {id:"micro",icon:"🔬",color:"#4ade80",name:"מיקרואלקטרוניקה",
+   hook:"מיליארדי טרנזיסטורים על שטח ציפורן — כיצד מיוצר מעגל משולב?",
+   sections:[
+     {h:"מה זה מיקרואלקטרוניקה?",t:"מיקרואלקטרוניקה עוסקת בתכנון וייצור מעגלים משולבים (IC – Integrated Circuit). שבב מודרני מכיל מיליארדי טרנזיסטורים על שטח של כמה מ\"מ². לפי חוק מור (Gordon Moore, 1965), מספר הטרנזיסטורים מוכפל בכל שנתיים — מגמה שנמשכת 60 שנה."},
+     {h:"תהליך ייצור — פוטוליתוגרפיה",items:["ניקוי ולטיפול ביריעות סיליקון (Wafer, 300 מ\"מ קוטר)","הוספת שכבת חומר photoresist רגיש לאור UV","חשיפה דרך מסיכה (Mask) עם דפוס המעגל","פיתוח (Develop) ושחיקה (Etch) ליצירת מבנה","דופינג (Doping) להגדרת אזורי N ו-P","חזרה על כ-100 שלבים ליצירת השבב המלא"]},
+     {h:"טכנולוגיית CMOS",t:"CMOS (Complementary MOS) משלבת NMOS ו-PMOS בכל שער לוגי. כאשר הפלט לא משתנה, כמעט לא זורם זרם — לכן צריכת הספק נמוכה מאד. עם הצטמצמות גדלים לננומטרים, בעיות כמו דליפה (Leakage), חום ורעש קוונטי הופכות אתגרים מרכזיים."},
+     {h:"סוגי ICs",items:["ASIC (Application-Specific IC): מותאם לשימוש מסוים, ביצועים מיטביים","FPGA: ניתן לתכנות מחדש","MCU (Microcontroller Unit): מעבד+זיכרון+פריפריות על שבב אחד","SoC (System on Chip): מערכת שלמה על שבב — CPU, GPU, RAM, I/O"]},
+     {h:"כלי EDA",t:"תכנון מעגלים VLSI מתבצע בתוכנות EDA (Electronic Design Automation): Cadence Virtuoso לסכמות תקבילות, Synopsys Design Compiler לסינתזה לוגית, Mentor Graphics לסימולציה. הגדרה RTL (Register Transfer Level) ב-VHDL/Verilog מוסבת אוטומטית לשערים לוגיים."}
+   ],
+   terms:["CMOS","VLSI","ASIC","SoC","Photolithography","Wafer","FinFET","EDA","RTL","Moore's Law","Leakage","Node (nm)","DRC","LVS"]
+  },
+  {id:"nano",icon:"🔭",color:"#a78bfa",name:"ננואלקטרוניקה",
+   hook:"בגבול הקוונטי — כאשר האלקטרוניקה פוגשת מכניקת הקוונטים",
+   sections:[
+     {h:"מה זה ננואלקטרוניקה?",t:"ננואלקטרוניקה עוסקת ברכיבים ומעגלים בסדר גודל של 1–100 ננומטר. בממדים אלו השפעות קוונטיות — כגון מנהור (Tunneling), כלוא אנרגיה (Quantum Confinement) ושזירה קוונטית — שולטות בהתנהגות האלקטרונית ולא ניתן עוד להתעלם מהן."},
+     {h:"מנהור קוונטי (Quantum Tunneling)",t:"מנהור הוא תופעה שבה אלקטרון 'חוצה' מחסום פיזי שלא היה יכול לחצות לפי פיזיקה קלאסית. בממדי ננומטרים — כגון בטרנזיסטורי MOSFET מודרניים — מנהור דרך שכבת האוקסיד יוצר זרם דליפה בלתי נרצה המגביל את ההמשכות לצמצום."},
+     {h:"פחמן ננוטיובים וגרפן",items:["CNT (Carbon Nanotube): גליל גרפן, מוליכות מצוינת, חוזק גבוה","גרפן: שכבת אטומים בודדת, ניידות אלקטרונים גבוהה פי 100 מסיליקון","Nano-FET: טרנזיסטורי שדה על בסיס CNT — ניסויים מבטיחים לתחליף סיליקון","Nanowire: חוטים ננומטריים מחצי-מוליכים לחיישנים וביו-אלקטרוניקה"]},
+     {h:"ספינטרוניקה (Spintronics)",t:"ספינטרוניקה משתמשת בסיבוב (Spin) האלקטרון כנוסף לטעינה לאחסון עיבוד מידע. GMR (Giant Magnetoresistance, פרס נובל 2007) שימש בקריאת ראשי דיסקים קשיחים. MRAM (Magnetic RAM) מבטיח זיכרון לא-נדיף מהיר וחסכוני בהספק."},
+     {h:"מחשוב קוונטי",t:"מחשוב קוונטי משתמש בביטים קוונטיים (Qubits) שיכולים לקיים סופרפוזיציה של 0 ו-1 בו-זמנית. דרישות: טמפרטורות קרוב לאפס מוחלט (~15 mK). חברות IBM, Google ו-IonQ מובילות. ב-2019 גוגל השיגה 'יתרון קוונטי' — 200 שניות לבעיה שדרשה 10,000 שנה מחשב רגיל."}
+   ],
+   terms:["Quantum Tunneling","CNT","Graphene","Nanowire","Spintronics","GMR","MRAM","Qubit","Quantum Confinement","FinFET","2DEG","Ballistic Transport"]
+  },
+  {id:"embedded",icon:"🤖",color:"#34d399",name:"מערכות משובצות מחשב",
+   hook:"מיקרובקרים, RTOS ופרוטוקולי תקשורת — לב כל מכשיר חכם",
+   sections:[
+     {h:"מהי מערכת משובצת?",t:"מערכת משובצת מחשב (Embedded System) היא מחשב ייעודי המשולב בתוך מוצר רחב יותר לביצוע תפקיד ספציפי. מצוי בכל מקום: מכשירי רפואה, רכבים, מטוסים, מכשירי חשמל ביתיים, לוויינים, ניידים. המאפיינים: משאבים מוגבלים, אמינות גבוהה, לעתים דרישות Real-Time."},
+     {h:"מיקרובקרים (MCU)",items:["AVR/Arduino: פשוט ונגיש לאב-טיפוס","STM32 (ARM Cortex-M): בינוני-גבוה, נפוץ בתעשייה","ESP32: Wi-Fi ו-BT מובנה, IoT","PIC (Microchip): ותיק, נפוץ ביישומים תעשייתיים","DSP (Texas Instruments): עיבוד אות דיגיטלי מהיר"]},
+     {h:"מערכת הפעלה בזמן אמת — RTOS",t:"RTOS (Real-Time Operating System) מבטיחה שמשימות מתבצעות תוך זמן מוגדר (deadline). FreeRTOS — המובילה בקוד פתוח — משמשת ב-STM32, ESP32 ועוד. מנגנונים: תזמון (Scheduling), Semaphore, Mutex, Queue. Bare-metal (ללא OS) מתאים למערכות פשוטות."},
+     {h:"פרוטוקולי תקשורת",items:["UART: תקשורת טורית דו-כיוונית, פשוטה, לחיישנים ו-GPS","SPI: מהיר, ארבעה קווים, ל-SD, Flash, OLED","I2C: שני קווים, לריבוי רכיבים, ל-IMU, EEPROM","CAN: עמיד ברכב, רשת קו שדרה 1–5 Mbit/s","Ethernet/LWM2M/MQTT: רשתות IoT"]},
+     {h:"כלים לפיתוח",t:"סביבת פיתוח (IDE): STM32CubeIDE, Arduino IDE, PlatformIO. Debugging: JTAG, SWD, OpenOCD. ניתוח לוגי: Logic Analyzer, Oscilloscope. מדדי ביצועים: שימוש בזיכרון (RAM Flash), זמן ביצוע ISR, נצילות CPU."}
+   ],
+   terms:["MCU","RTOS","FreeRTOS","Interrupt","DMA","GPIO","UART","SPI","I²C","CAN","JTAG","SWD","HAL","Bootloader","PWM","ADC","Bare-metal"]
+  },
+  {id:"power",icon:"🔌",color:"#f87171",name:"אלקטרוניקת הספק",
+   hook:"ממרים הספק, ממסרים ומהפכי AC/DC — שליטה על אנרגיה",
+   sections:[
+     {h:"מהי אלקטרוניקת הספק?",t:"אלקטרוניקת הספק עוסקת בהמרה, שליטה והפצה של אנרגיה חשמלית. מחשמל 220V AC ועד לוגיקה של 1.8V DC — כל הפרש מתח עובר דרך ממיר הספק כלשהו. המטרה: יעילות גבוהה (מינימום הפסד חום), גודל מינימלי ואמינות מקסימלית."},
+     {h:"ממירי DC-DC",items:["Buck (מוריד מתח): ממיר מתח גבוה לנמוך, יעילות 85–98%","Boost (מעלה מתח): ממיר מתח נמוך לגבוה, ממיר USB ל-12V","Buck-Boost: גמיש — מעלה ומוריד מתח","Flyback: בידוד גלווני, נפוץ ב-SMPS, מטענים","SEPIC / Ćuk: ממירים מיוחדים לבקרת זרם מדויקת"]},
+     {h:"ממיר AC-DC וממסר",t:"גשר דיודות (Full-Wave Rectifier) ממיר AC לפולסים DC. קבל סינון מחליק את הפולסים. ממסרי מיתוג (SMPS) משתמשים בטרנזיסטור MOSFET/IGBT לחיתוך ה-AC בתדרים גבוהים (עשרות kHz ועד MHz), ומאפשרים שנאים קטנים ויעילות גבוהה."},
+     {h:"חומרים רחבי-פס — GaN, SiC",t:"טרנזיסטורי GaN (Gallium Nitride) ו-SiC (Silicon Carbide) מציעים יתרונות על פני MOSFET סיליקון: מתח שבירה גבוה יותר, תדרי מיתוג גבוהים יותר (עד 10 MHz) וחום גבוה יותר. נמצאים במטענים מהירים, רכבים חשמליים ומחשבי כוח. Intel, Apple ו-Navitas מובילות."},
+     {h:"UPS ואחסון אנרגיה",items:["UPS (Uninterruptible Power Supply): גיבוי חשמל רציף","Inverter: ממיר DC ל-AC, נדרש בפאנלים סולאריים","Battery Management System (BMS): שליטה בסוללות ליתיום","Supercapacitor: אחסון קצר-טווח, מיליוני מחזורים"]}
+   ],
+   terms:["Buck","Boost","Flyback","SMPS","PWM","Duty Cycle","MOSFET","IGBT","GaN","SiC","Rectifier","Inverter","PFC","EMI","Switching Frequency","BMS"]
+  },
+  {id:"rf",icon:"📡",color:"#60a5fa",name:"תדרי רדיו (RF) ותקשורת",
+   hook:"גלים אלקטרומגנטיים, אנטנות ואפנון — מרדיו ועד 5G",
+   sections:[
+     {h:"הספקטרום האלקטרומגנטי",t:"גלי רדיו (RF) הם קרינה אלקטרומגנטית בתחום 3 Hz עד 300 GHz. תחומי שימוש: AM/FM (MHz), Wi-Fi (2.4/5 GHz), 5G (mmWave עד 77 GHz), רדארים (X-band 8–12 GHz, Ku-band, Ka-band), קישורי לוויין, ציוד רפואי (MRI ב-64–128 MHz)."},
+     {h:"אנטנות",items:["אנטנת דיפול: פשוטה, אורכה λ/2","אנטנת מסגרת (Patch/Microstrip): שטוחה, נפוצה ב-GPS, Wi-Fi","Yagi-Uda: כיוונית, טווח ארוך","MIMO: מספר אנטנות לקיבולת ערוץ גבוהה (4G/5G)","Phased Array: קרן אלקטרונית סרוקה, נמצאת ברדארים ו-5G"]},
+     {h:"אפנון (Modulation)",items:["AM (Amplitude Modulation): פשוטה, רדיו AM","FM (Frequency Modulation): עמידה ברעש, רדיו FM","QAM (Quadrature AM): נתונים דיגיטליים בסרט אנלוגי, עד 1024-QAM","OFDM (Orthogonal FDM): Wi-Fi/5G/LTE, סרוק תדרים מקביל","FHSS / DSSS: מרחב ספקטרום לאבטחה ועמידות"]},
+     {h:"מגברי RF",t:"LNA (Low-Noise Amplifier): מגביל ראשון בשרשרת הקבלה, מינימום רעש (NF < 1 dB). PA (Power Amplifier): מגדיל אות לשידור, יעילות (Class A/AB/E/F). VGA (Variable Gain Amplifier): רווח מתכוונן. מגברי כוח משמשים בתחנות בסיס, לוויינים ורדארים."},
+     {h:"מדדי RF",items:["S-Parameters: S11 (החזרה), S21 (העברה), S12 (בידוד), S22","VSWR: יחס גל עומד — 1:1 = מושלם","dBm: הספק ביחס ל-1 mW","Noise Figure (NF): כמות הרעש שמוסיף הרכיב","IP3 (Third-Order Intercept): מדד ללינאריות"]}
+   ],
+   terms:["S-parameters","LNA","PA","VCO","PLL","VSWR","dBm","NF","IP3","OFDM","MIMO","Phased Array","Impedance Matching","Smith Chart","50Ω"]
+  },
+  {id:"opto",icon:"💡",color:"#fbbf24",name:"אופטואלקטרוניקה",
+   hook:"אור ואלקטרוניקה — LEDים, לייזרים, סיבים אופטיים וחיישני אור",
+   sections:[
+     {h:"מהי אופטואלקטרוניקה?",t:"אופטואלקטרוניקה (Optoelectronics) חוקרת את האינטראקציה בין אור לאלקטרוניקה — כלומר, כיצד אנרגיה חשמלית הופכת לאור (LED, לייזר) וכיצד אור הופך לאות חשמלי (פוטודיודה, CCD). התחום מיישם עקרונות פיזיקה קוונטית ואופטיקה."},
+     {h:"LED — דיודת פליטת אור",t:"LED ממירה אנרגיה חשמלית לאור על ידי הַשְׁלָמָה קוונטית: כאשר אלקטרון 'נופל' לרמת אנרגיה נמוכה יותר, האנרגיה העודפת נפלטת כפוטון. גל האור נקבע לפי פס האנרגיה של החומר: InGaN לכחול-ירוק, AlInGaP לאדום-כתום-צהוב. LED לבן = כחול + פוספור. יעילות מגיעה ל-200 lm/W."},
+     {h:"לייזרים למחצה",items:["VCSEL (Vertical-Cavity Surface-Emitting Laser): בשימוש נרחב בחיישני LiDAR, אפל Face ID, סיב אופטי","DFB Laser: תקשורת סיב-אופטית, מרחוק עשרות ק\"מ","Quantum Cascade Laser: פולט IR בינוני/ארוך, ספקטרוסקופיה","Edge-Emitting Laser: ניתוח וחיתוך ברפואה ותעשייה"]},
+     {h:"פוטוגלאים (Photodetectors)",items:["Photodiode (PD): ממירה אור לזרם, מהירה ויעילה","APD (Avalanche Photodiode): רווח פנימי, רגישה מאד לאות חלש","SPAD: גילוי פוטון בודד, LiDAR, קוונטי","CCD/CMOS Imager: מערך פיקסלים לצילום"]},
+     {h:"סיב אופטי (Fiber Optics)",t:"סיב אופטי מעביר אור בקרינה כוללת פנימית (Total Internal Reflection). Single-Mode Fiber: קוטר ליבה 8–10 μm, לטווח ארוך. Multi-Mode Fiber: קוטר 50–62.5 μm, לטווח קצר בבניינים. קצב עד 100 Tbit/s לכבל. יתרונות: עמידות ל-EMI, אובדן נמוך, בידוד גלווני."}
+   ],
+   terms:["LED","VCSEL","DFB","LASER","Photodiode","APD","SPAD","LiDAR","Quantum Efficiency","Single-Mode Fiber","Multi-Mode Fiber","WDM","Bandwidth","lm/W"]
+  },
+  {id:"avionics",icon:"✈️",color:"#94a3b8",name:"אוויוניקה ואלקטרוניקה צבאית",
+   hook:"ניווט, תקשורת ולוחמה אלקטרונית — אלקטרוניקה בשדה הקרב ובשמיים",
+   sections:[
+     {h:"מהי אוויוניקה?",t:"אוויוניקה (Avionics = Aviation + Electronics) היא כלל הרכיבים האלקטרוניים המשמשים במטוסים, כלי-טיס וחלליות. כוללת: מערכות ניווט (INS, GPS), תקשורת (VHF/UHF/SATCOM), תצוגת טייס (HUD, MFD), ניהול טיסה (FMS) וחיישנים (Radar, EO/IR)."},
+     {h:"ניווט",items:["INS (Inertial Navigation System): מד-תאוצה + ג'ירוסקופ, עצמאי מסיגנל חיצוני","GPS/GNSS: לוויינים, דיוק ~3 מטר (RTK: ס\"מ)","Radar Altimeter: מד-גובה רדארי לפני השטח","ILS/VOR/DME: מערכות נחיתה ותכלול רדיו","Terrain-Following Radar: טיסה נמוכה מתחת לרדאר אויב"]},
+     {h:"לוחמה אלקטרונית — EW",t:"לוחמה אלקטרונית (Electronic Warfare) כוללת: ESM (Electronic Support Measures) — יירוט ואיתור פליטות אויב, ECM (Electronic CounterMeasures) — שיבוש רדארים ותקשורת אויב, ECCM (Electronic Counter-CounterMeasures) — הגנה מפני שיבוש, ו-ELINT (Electronic Intelligence) — מודיעין מאיסוף אלקטרוני."},
+     {h:"תקשורת צבאית",items:["MIL-STD-1553: אפיק נתונים סינכרוני טורי 1 Mbit/s, מהימנות גבוהה","Link 16 / JTIDS: רשת טקטית מוצפנת לצבאות נאטו","SATCOM: תקשורת ויצינה לוויינית, גלובלית, מוצפנת","Datalink: העברת תמונות מידע בזמן אמת מ-UAV"]},
+     {h:"תקנים ומחמירות",t:"תקן ARINC 429 לאוויוניקה אזרחית; DO-178C — תוכנה לשימוש אווירי; MIL-SPEC — דרישות סביבה צבאיות (חום, רטט, הלם, EMI). כל רכיב אווירי חייב לעמוד בתנאי הסמכה קפדניים לפני שילוב במטוס."}
+   ],
+   terms:["INS","GPS","IFF","EW","ECM","ECCM","ELINT","MIL-STD-1553","ARINC-429","Link 16","HUD","FMS","RWR","Jamming","DO-178C"]
+  },
+  {id:"eo",icon:"🎯",color:"#f472b6",name:"אלקטרואופטיקה",
+   hook:"מיזוג אלקטרוניקה ואופטיקה — ראיית לילה, מכווני לייזר וחיישנים תרמיים",
+   sections:[
+     {h:"מהי אלקטרואופטיקה?",t:"אלקטרואופטיקה (EO — Electro-Optics) היא תחום הנדסי המשלב אופטיקה ואלקטרוניקה ליצירת מערכות איסוף, עיבוד וניתוח של קרינה אלקטרומגנטית — בדרך-כלל ב-UV, אור גלוי ו-IR. שימושים: ראיית לילה, הנחיית טילים, כלי מדידה, ניווט לייזר, סריקת לוויין."},
+     {h:"מצלמות EO",items:["מצלמת גלוי (Visible CCD/CMOS): 400–700 nm, יום","מצלמת SWIR (1–2.5 μm): חדירה ערפל ועשן, ראיית לילה","מצלמת MWIR (3–5 μm): גילוי מנועי מטוסים, טילים","מצלמת LWIR (8–12 μm): תרמוגרפיה, חיפוש אנשים"]},
+     {h:"מרכיבי מערכת EO",t:"מערכת EO טיפוסית כוללת: עדשות אופטיות (קבועות/משתנות), גלאים/חיישנים (CCD, CMOS, HgCdTe, InSb), ג'ימבל מייצב (IMU+סרוומנוע), יחידת עיבוד תמונה (FPGA/GPU), מחשב שליטה ותוכנה לעקיבה ומיצוע. חשיבות הקירור: מחלקת IR דורשת קירור ל-77K (חנקן נוזלי) או קירור מכאני (Stirling)."},
+     {h:"לייזרים בשדה EO",items:["LRF (Laser Range Finder): מד-טווח בזרקור, Nd:YAG 1064nm","Laser Designator: מסמן מטרה לנשק מונחה לייזר","Laser Illuminator: סיוע ראיית לילה ב-SWIR","DIRCM: ניטרול טילים IR בלייזר"]},
+     {h:"כיול מערכת EO",t:"כיול אלקטרואופטי כולל: Boresight (יישור ציר אופטי למכני), NUC (תיקון אי-אחידות גלאים), כיול רדיומטרי (כמות קרינה), כיול ספקטרלי (תגובה לתדר), ובדיקות MTF (חדות). תקנים: MIL-STD-3009, NATO STANAG, DO-160G."}
+   ],
+   terms:["FLIR","MWIR","LWIR","SWIR","HgCdTe","InSb","Boresight","NUC","LRF","Designator","Gimbal","IMU","MTF","NEDT","TEC","Stirling Cooler"]
+  },
+  {id:"ir",icon:"🌡️",color:"#ef4444",name:"אלקטרוניקה IR",
+   hook:"קרינת אינפרה-אדום — הדמיה תרמית, גלאים ומערכות איתור",
+   sections:[
+     {h:"מהי קרינת IR?",t:"קרינת אינפרה-אדום (Infrared) היא קרינה אלקטרומגנטית בטווח 0.7 μm עד 1000 μm (1 mm). כל גוף בטמפרטורה מעל אפס מוחלט פולט IR על פי חוק סטפן-בולצמן: P = σ·ε·T⁴. חלוקת הספקטרום: NIR (0.7–1 μm), SWIR (1–2.5 μm), MWIR (3–5 μm), LWIR (8–12 μm), FIR (>12 μm)."},
+     {h:"חלונות אטמוספריים",t:"האטמוספרה בולעת IR ברוב הטווחים — פרט ל'חלונות' שקופים: MWIR (3–5 μm) ו-LWIR (8–12 μm). לכן מרבית המצלמות התרמיות פועלות בחלונות אלו. גז CO₂ בולע חזק ב-4.25 μm; H₂O בולע ב-5–8 μm — מגבלות חשובות לתכנון מערכות."},
+     {h:"סוגי גלאי IR",items:["גלאים פוטוניים (Photon Detectors): InSb (MWIR), HgCdTe/MCT (MWIR+LWIR), QWIP — רגישים מאד, דורשים קירור","גלאים תרמיים (Thermal Detectors): Microbolometer (LWIR, בטמפרטורת חדר), פירואלקטרי — לא דורשים קירור, פחות רגישים","ROIC (Readout Integrated Circuit): ה-IC שמחבר בין מערך הגלאים לדיגיטציה"]},
+     {h:"מצלמות תרמיות — עקרון פעולה",t:"מצלמת תרמית מכילה עדשה מ-Germanium (שקוף ב-IR) או Chalcogenide, מערך FPA (Focal Plane Array) של גלאים, יחידת עיבוד ותוכנת NUC ו-AGC. תמונת הפלט מייצגת חתך טמפרטורות: ה-NEDT (Noise Equivalent Temperature Difference) קובע את הרגישות המינימלית — ערכים טיפוסיים 20–50 mK."},
+     {h:"יישומים",items:["בטחוניים: FLIR (Forward Looking IR), ראשי חיפוש (Seeker), EW","אזרחיים: בדיקות תרמוגרפיות של בניינים ולוחות חשמל","רפואה: אבחון שסת הגוף, פיזיותרפיה","ייצור: בקרת תהליכים, גילוי ליקויים","רכב: Night Vision (גל קצר ותרמי)"]}
+   ],
+   terms:["MWIR","LWIR","SWIR","FPA","HgCdTe","MCT","InSb","QWIP","Microbolometer","NUC","NEDT","MRTD","ROIC","TEC","Stirling","Ge Lens","Boresight"]
+  },
+];
+
+function KnowledgeScreen({onBack}){
+  const[openId,setOpenId]=useState(null);
+  const[search,setSearch]=useState("");
+  const filtered=search.trim()
+    ?KNOWLEDGE_BASE.filter(k=>k.name.includes(search)||k.hook.includes(search)||k.terms.some(t=>t.toLowerCase().includes(search.toLowerCase())))
+    :KNOWLEDGE_BASE;
+  return(
+    <div style={{padding:"16px",maxWidth:500,margin:"0 auto"}}>
+      <div style={{display:"flex",gap:8,marginBottom:14,alignItems:"center"}}>
+        <button onClick={onBack} className="btn" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",color:"#94a3b8",borderRadius:10,padding:"7px 13px",fontSize:13,fontWeight:700,flexShrink:0}}>🏠 בית</button>
+        <div style={{fontSize:17,fontWeight:900,color:"#fff"}}>📖 העשרת ידע</div>
+      </div>
+      <div style={{marginBottom:12}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 חפש קטגוריה או מונח..." style={{width:"100%",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:11,padding:"9px 14px",color:"#fff",fontSize:13,outline:"none",direction:"rtl"}}/>
+      </div>
+      <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",marginBottom:10,textAlign:"center"}}>לחץ על קטגוריה לקריאה מורחבת • {KNOWLEDGE_BASE.length} תחומים</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {filtered.map(cat=>{
+          const isOpen=openId===cat.id;
+          return(
+            <div key={cat.id} style={{background:"rgba(255,255,255,0.04)",border:`1.5px solid ${isOpen?cat.color+"88":"rgba(255,255,255,0.08)"}`,borderRadius:16,overflow:"hidden",transition:"border-color 0.25s",animation:"slideUp 0.3s ease both"}}>
+              <button onClick={()=>setOpenId(isOpen?null:cat.id)} className="btn" style={{width:"100%",background:"none",border:"none",padding:"14px 16px",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+                <div style={{fontSize:26,flexShrink:0}}>{cat.icon}</div>
+                <div style={{flex:1,textAlign:"right"}}>
+                  <div style={{fontSize:14,fontWeight:900,color:"#fff",marginBottom:2}}>{cat.name}</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",lineHeight:1.4}}>{cat.hook}</div>
+                </div>
+                <div style={{fontSize:18,color:cat.color,flexShrink:0,transition:"transform 0.25s",transform:isOpen?"rotate(90deg)":"rotate(0deg)"}}>›</div>
+              </button>
+              {isOpen&&(
+                <div style={{padding:"0 16px 16px",borderTop:`1px solid ${cat.color}33`}}>
+                  {cat.sections.map((sec,si)=>(
+                    <div key={si} style={{marginTop:14}}>
+                      <div style={{fontSize:12,fontWeight:900,color:cat.color,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+                        <span style={{width:18,height:18,borderRadius:"50%",background:cat.color+"22",border:`1px solid ${cat.color}55`,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,flexShrink:0}}>{si+1}</span>
+                        {sec.h}
+                      </div>
+                      {sec.t&&<div style={{fontSize:12,color:"rgba(255,255,255,0.72)",lineHeight:1.65,textAlign:"right"}}>{sec.t}</div>}
+                      {sec.items&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:5,marginTop:4}}>
+                          {sec.items.map((item,ii)=>(
+                            <div key={ii} style={{display:"flex",gap:7,alignItems:"flex-start"}}>
+                              <div style={{width:5,height:5,borderRadius:"50%",background:cat.color,flexShrink:0,marginTop:5}}/>
+                              <div style={{fontSize:12,color:"rgba(255,255,255,0.68)",lineHeight:1.55,flex:1,textAlign:"right"}}>{item}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <div style={{marginTop:16}}>
+                    <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,0.4)",marginBottom:7}}>מונחי מפתח</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                      {cat.terms.map(t=>(
+                        <span key={t} style={{background:`${cat.color}18`,border:`1px solid ${cat.color}40`,borderRadius:20,padding:"3px 9px",fontSize:10.5,color:cat.color,fontWeight:700,fontFamily:"monospace"}}>{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {filtered.length===0&&<div style={{textAlign:"center",padding:32,color:"rgba(255,255,255,0.3)",fontSize:13}}>לא נמצאו תוצאות 🦆</div>}
+      </div>
+    </div>
+  );
+}
+
 function LeaderboardScreen({user,state,onBack}){
   const[leaders,setLeaders]=useState([]);
   const[loading,setLoading]=useState(true);
@@ -1751,7 +1966,7 @@ function NoLivesScreen({state,onHome,lang}){
   );
 }
 
-function HomeScreen({user,state,setState,onStart,onSentences,onProfile,onAddWords,onNotepad,onReset,onLeaderboard}){
+function HomeScreen({user,state,setState,onStart,onSentences,onProfile,onAddWords,onNotepad,onReset,onLeaderboard,onKnowledge}){
   const lang=state.lang||"he";
   const level=getLevel(state.xp),nextLevel=getNext(state.xp);
   const duck=getDuck(state.correct);
@@ -1770,6 +1985,9 @@ function HomeScreen({user,state,setState,onStart,onSentences,onProfile,onAddWord
         </button>
         <button onClick={onLeaderboard} className="btn" style={{background:"rgba(245,158,11,0.12)",border:"1px solid rgba(245,158,11,0.35)",borderRadius:12,padding:"8px 12px",color:"#f59e0b",fontSize:13,fontWeight:700}}>
           🏆 ניקוד
+        </button>
+        <button onClick={onKnowledge} className="btn" style={{background:"rgba(34,211,238,0.12)",border:"1px solid rgba(34,211,238,0.35)",borderRadius:12,padding:"8px 12px",color:"#22d3ee",fontSize:13,fontWeight:700}}>
+          📖 ידע
         </button>
         <button onClick={()=>setState(p=>{const n={...p,lang:p.lang==="he"?"en":"he"};saveS(n);return n;})} className="btn" style={{background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.3)",borderRadius:10,padding:"7px 12px",color:"#a5b4fc",fontSize:12,fontWeight:700}}>
           {lang==="he"?"🇺🇸 EN":"🇮🇱 HE"}
@@ -2235,7 +2453,8 @@ function App(){
     <div style={{minHeight:"100vh",background:bgMap[lv.name]||bgMap["מתחיל"],transition:"background 1.2s ease",fontFamily:"'Heebo',sans-serif",direction:lang==="he"?"rtl":"ltr",color:"#fff",overflowX:"hidden"}}>
       <style>{CSS}</style>
       <div style={{position:"fixed",inset:0,pointerEvents:"none",opacity:0.04,backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.9) 1px,transparent 1px)",backgroundSize:"28px 28px"}}/>
-      {screen==="home"&&<HomeScreen user={user} state={state} setState={setState} onStart={cat=>{setCategory(cat);setScreen("quiz");}} onSentences={()=>setScreen("sentences")} onProfile={()=>setScreen("profile")} onAddWords={()=>setScreen("addwords")} onNotepad={()=>setScreen("notepad")} onLeaderboard={()=>setScreen("leaderboard")} onReset={()=>{if(window.confirm(lang==="en"?"Delete all progress?":"למחוק הכל?")){const f=initS();setState(f);saveS(f);}}}/>}
+      {screen==="home"&&<HomeScreen user={user} state={state} setState={setState} onStart={cat=>{setCategory(cat);setScreen("quiz");}} onSentences={()=>setScreen("sentences")} onProfile={()=>setScreen("profile")} onAddWords={()=>setScreen("addwords")} onNotepad={()=>setScreen("notepad")} onLeaderboard={()=>setScreen("leaderboard")} onKnowledge={()=>setScreen("knowledge")} onReset={()=>{if(window.confirm(lang==="en"?"Delete all progress?":"למחוק הכל?")){const f=initS();setState(f);saveS(f);}}}/>}
+      {screen==="knowledge"&&<KnowledgeScreen onBack={()=>setScreen("home")}/>}
       {screen==="quiz"&&<QuizScreen category={category} state={state} setState={setState} onHome={()=>setScreen("home")} onBack={()=>setScreen("home")}/>}
       {screen==="sentences"&&<SentenceScreen state={state} setState={setState} onHome={()=>setScreen("home")} onBack={()=>setScreen("home")}/>}
       {screen==="profile"&&<ProfileScreen user={user} state={state} setState={setState} onBack={()=>setScreen("home")} onLogout={async()=>{await signOut(auth);setUser(null);setScreen("home");}}/>}
