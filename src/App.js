@@ -143,15 +143,163 @@ function playIntroSound(){
 }
 
 const AVATARS=[
-  {id:"duck",   name:"ברווז",    emoji:"🦆", unlockCats:0,   rare:false},
-  {id:"croc",   name:"קרוקודיל",emoji:"🐊", unlockCats:1,   rare:false},
-  {id:"goat",   name:"עז",       emoji:"🐐", unlockCats:2,   rare:false},
-  {id:"cat",    name:"חתול",     emoji:"🐱", unlockCats:3,   rare:false},
-  {id:"cow",    name:"פרה",      emoji:"🐄", unlockCats:4,   rare:false},
-  {id:"giraffe",name:"ג'ירפה",  emoji:"🦒", unlockCats:5,   rare:false},
-  {id:"dino",   name:"דינוזאור",emoji:"🦕", unlockCats:6,   rare:false},
-  {id:"sloth",  name:"עצלן",     emoji:"🦥", unlockCats:999, rare:true, advancedRequired:true},
+  {id:"duck",  name:"ברווז צהוב",   unlockCats:0,   rare:false},
+  {id:"duck2", name:"ברווז ימאי",   unlockCats:1,   rare:false},
+  {id:"duck3", name:"ברווז מגניב",  unlockCats:2,   rare:false},
+  {id:"duck4", name:"ברווז שף",     unlockCats:3,   rare:false},
+  {id:"duck5", name:"ברווז נינג'ה", unlockCats:4,   rare:false},
+  {id:"duck6", name:"ברווז מלכותי", unlockCats:5,   rare:false},
+  {id:"duck7", name:"ברווז קוסם",   unlockCats:6,   rare:false},
+  {id:"duck8", name:"ברווז זהוב ✨", unlockCats:999, rare:true, advancedRequired:true},
 ];
+
+function DuckBase({c="#fde68a",bk="#f59e0b",size=80,children}){
+  return(
+    <svg width={size} height={size} viewBox="0 0 100 115" style={{overflow:"visible",filter:"drop-shadow(0 3px 8px rgba(0,0,0,0.22))"}}>
+      <ellipse cx="82" cy="69" rx="11" ry="6" fill={c} opacity="0.85" style={{transformBox:"fill-box",transformOrigin:"15% 50%",animation:"tailWag 3s ease infinite"}}/>
+      <ellipse cx="50" cy="72" rx="30" ry="24" fill={c} style={{animation:"breathe 3.5s ease infinite"}}/>
+      <ellipse cx="22" cy="75" rx="13" ry="9" fill={c} opacity="0.75" style={{transformBox:"fill-box",transformOrigin:"80% 50%",animation:"wingFlap 5s ease infinite"}}/>
+      <ellipse cx="78" cy="75" rx="13" ry="9" fill={c} opacity="0.75"/>
+      <circle cx="50" cy="40" r="22" fill={c}/>
+      <ellipse cx="68" cy="43" rx="11" ry="6" fill={bk}/>
+      <circle cx="41" cy="37" r="6" fill="#1a1a2e" className="duck-eye" style={{transformBox:"fill-box",transformOrigin:"center"}}/>
+      <circle cx="59" cy="37" r="6" fill="#1a1a2e" className="duck-eye-r" style={{transformBox:"fill-box",transformOrigin:"center"}}/>
+      <circle cx="43" cy="35" r="2" fill="white"/>
+      <circle cx="61" cy="35" r="2" fill="white"/>
+      <ellipse cx="41" cy="97" rx="7" ry="4" fill={bk} style={{animation:"feetDance 1.8s ease infinite alternate"}}/>
+      <ellipse cx="59" cy="97" rx="7" ry="4" fill={bk} style={{animation:"feetDance 1.8s 0.9s ease infinite alternate"}}/>
+      {children}
+    </svg>
+  );
+}
+
+// Duck 1: Basic yellow
+function Duck1SVG({size=80}){return <DuckBase c="#fde68a" bk="#f59e0b" size={size}/>;}
+
+// Duck 2: Sailor — blue with cap and stripes
+function Duck2SVG({size=80}){return(
+  <DuckBase c="#93c5fd" bk="#1d4ed8" size={size}>
+    <ellipse cx="50" cy="24" rx="22" ry="5.5" fill="#1e40af"/>
+    <rect x="34" y="11" width="32" height="14" rx="3" fill="#1e40af"/>
+    <ellipse cx="50" cy="11" rx="17" ry="5" fill="#f8fafc"/>
+    <circle cx="50" cy="11" r="3.5" fill="#1d4ed8"/>
+    <line x1="36" y1="67" x2="64" y2="67" stroke="#1e40af" strokeWidth="2.5" opacity="0.5"/>
+    <line x1="36" y1="74" x2="64" y2="74" stroke="#1e40af" strokeWidth="2.5" opacity="0.5"/>
+  </DuckBase>
+);}
+
+// Duck 3: Cool — orange with sunglasses
+function Duck3SVG({size=80}){return(
+  <DuckBase c="#fb923c" bk="#c2410c" size={size}>
+    <rect x="31" y="31" width="14" height="10" rx="3.5" fill="#0f172a"/>
+    <rect x="53" y="31" width="14" height="10" rx="3.5" fill="#0f172a"/>
+    <line x1="45" y1="36" x2="53" y2="36" stroke="#0f172a" strokeWidth="2.5"/>
+    <line x1="28" y1="36" x2="31" y2="36" stroke="#0f172a" strokeWidth="2.5"/>
+    <line x1="67" y1="36" x2="70" y2="36" stroke="#0f172a" strokeWidth="2.5"/>
+    <rect x="31" y="31" width="14" height="5" rx="2.5" fill="#334155" opacity="0.45"/>
+    <rect x="53" y="31" width="14" height="5" rx="2.5" fill="#334155" opacity="0.45"/>
+  </DuckBase>
+);}
+
+// Duck 4: Chef — cream white with tall toque
+function Duck4SVG({size=80}){return(
+  <DuckBase c="#fef9c3" bk="#f59e0b" size={size}>
+    <rect x="38" y="-2" width="24" height="24" rx="5" fill="#f8fafc"/>
+    <ellipse cx="50" cy="23" rx="15" ry="5" fill="#e2e8f0"/>
+    <line x1="44" y1="3" x2="44" y2="21" stroke="#e2e8f0" strokeWidth="3" strokeLinecap="round" opacity="0.6"/>
+    <line x1="50" y1="1" x2="50" y2="21" stroke="#e2e8f0" strokeWidth="3" strokeLinecap="round" opacity="0.6"/>
+    <line x1="56" y1="3" x2="56" y2="21" stroke="#e2e8f0" strokeWidth="3" strokeLinecap="round" opacity="0.6"/>
+    <ellipse cx="50" cy="65" rx="7" ry="5" fill="#dc2626" opacity="0.85"/>
+    <circle cx="50" cy="65" r="2.5" fill="#991b1b"/>
+  </DuckBase>
+);}
+
+// Duck 5: Ninja — dark with headband and mask
+function Duck5SVG({size=80}){return(
+  <DuckBase c="#4b5563" bk="#1f2937" size={size}>
+    <rect x="27" y="20" width="46" height="10" rx="5" fill="#dc2626"/>
+    <circle cx="50" cy="25" r="4.5" fill="#7f1d1d"/>
+    <rect x="28" y="44" width="44" height="14" rx="7" fill="#111827" opacity="0.92"/>
+    <ellipse cx="40" cy="51" rx="8" ry="4.5" fill="#374151"/>
+    <ellipse cx="60" cy="51" rx="8" ry="4.5" fill="#374151"/>
+    <line x1="65" y1="44" x2="80" y2="36" stroke="#dc2626" strokeWidth="2" opacity="0.7"/>
+    <line x1="65" y1="58" x2="80" y2="62" stroke="#dc2626" strokeWidth="2" opacity="0.5"/>
+  </DuckBase>
+);}
+
+// Duck 6: Royal — purple with crown and cape
+function Duck6SVG({size=80}){return(
+  <DuckBase c="#c084fc" bk="#7e22ce" size={size}>
+    <polygon points="35,23 41,9 50,19 59,9 65,23 63,28 37,28" fill="#fbbf24"/>
+    <rect x="35" y="25" width="30" height="6" rx="2.5" fill="#f59e0b"/>
+    <circle cx="41" cy="14" r="2.5" fill="#ef4444"/>
+    <circle cx="50" cy="21" r="2.5" fill="#60a5fa"/>
+    <circle cx="59" cy="14" r="2.5" fill="#4ade80"/>
+    <path d="M23 70 Q20 84 27 88 Q50 96 73 88 Q80 84 77 70" fill="#dc2626" opacity="0.75"/>
+    <line x1="27" y1="70" x2="73" y2="70" stroke="#fbbf24" strokeWidth="2" opacity="0.6"/>
+  </DuckBase>
+);}
+
+// Duck 7: Wizard — indigo with pointed hat and wand
+function Duck7SVG({size=80}){return(
+  <DuckBase c="#818cf8" bk="#3730a3" size={size}>
+    <polygon points="50,-2 33,26 67,26" fill="#1e1b4b"/>
+    <ellipse cx="50" cy="26" rx="18" ry="5.5" fill="#312e81"/>
+    <ellipse cx="42" cy="16" rx="2.5" ry="2.5" fill="#fbbf24"/>
+    <ellipse cx="55" cy="8" rx="2" ry="2" fill="#f472b6"/>
+    <ellipse cx="60" cy="18" rx="1.8" ry="1.8" fill="#34d399"/>
+    <line x1="73" y1="60" x2="88" y2="42" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round"/>
+    <circle cx="88" cy="41" r="4" fill="#fbbf24"/>
+    <circle cx="88" cy="41" r="7" fill="#fbbf24" opacity="0.25" style={{animation:"breathe 1.5s ease infinite"}}/>
+  </DuckBase>
+);}
+
+// Duck 8: Golden — shiny gold with sparkles (rarest)
+function Duck8SVG({size=80}){
+  const sparkles=[{x:12,y:28},{x:82,y:22},{x:16,y:78},{x:80,y:80},{x:50,y:4},{x:88,y:52}];
+  return(
+    <DuckBase c="#fbbf24" bk="#b45309" size={size}>
+      <polygon points="35,23 42,7 50,19 58,7 65,23 63,28 37,28" fill="#fde68a"/>
+      <rect x="35" y="25" width="30" height="6" rx="2.5" fill="#f59e0b"/>
+      <circle cx="42" cy="12" r="2.5" fill="#ef4444"/>
+      <circle cx="50" cy="21" r="2" fill="#60a5fa"/>
+      <circle cx="58" cy="12" r="2.5" fill="#4ade80"/>
+      {sparkles.map((s,i)=>(
+        <g key={i} style={{animation:`starDrift 1.6s ${i*0.26}s ease-in-out infinite`,"--dx":`${(i%2?1:-1)*5}px`,"--dy":`${i%3===0?-6:4}px`}}>
+          <polygon points={`${s.x},${s.y-4} ${s.x+1.2},${s.y-1} ${s.x+4},${s.y} ${s.x+1.2},${s.y+1} ${s.x},${s.y+4} ${s.x-1.2},${s.y+1} ${s.x-4},${s.y} ${s.x-1.2},${s.y-1}`} fill="#fde68a" opacity="0.9"/>
+        </g>
+      ))}
+    </DuckBase>
+  );
+}
+
+const ANIM_MAP={
+  duck: "duckBob 2.6s ease infinite",
+  duck2:"duckSway 2.2s ease infinite",
+  duck3:"duckStrut 2s ease infinite",
+  duck4:"duckBounce 1.4s ease infinite",
+  duck5:"duckNinja 3.5s ease infinite",
+  duck6:"duckFloat 3.2s ease infinite",
+  duck7:"duckMagic 4s ease infinite",
+  duck8:"duckGolden 2s ease infinite",
+};
+
+function AvatarSVG({id, size=80}){
+  const anim=ANIM_MAP[id]||ANIM_MAP.duck;
+  const inner=
+    id==="duck"  ? <Duck1SVG size={size}/> :
+    id==="duck2" ? <Duck2SVG size={size}/> :
+    id==="duck3" ? <Duck3SVG size={size}/> :
+    id==="duck4" ? <Duck4SVG size={size}/> :
+    id==="duck5" ? <Duck5SVG size={size}/> :
+    id==="duck6" ? <Duck6SVG size={size}/> :
+    id==="duck7" ? <Duck7SVG size={size}/> :
+    id==="duck8" ? <Duck8SVG size={size}/> :
+    <Duck1SVG size={size}/>;
+  return <div style={{animation:anim,display:"inline-block",transformOrigin:"50% 90%"}}>{inner}</div>;
+}
+
+
 
 function AvatarCrocSVG({size=80}){return(
   <svg width={size} height={size} viewBox="0 0 100 100">
@@ -314,22 +462,6 @@ function AvatarSlothSVG({size=80}){return(
     <text x="68" y="28" fontSize="9" textAnchor="middle">z</text>
   </svg>
 );}
-
-function AvatarDuckSVG({size=80,duck}){
-  return <DuckSVG stage={duck||DUCK_STAGES[3]} mood="happy" size={size}/>;
-}
-
-function AvatarSVG({id, size=80, duck}){
-  if(id==="duck")    return<AvatarDuckSVG size={size} duck={duck}/>;
-  if(id==="croc")    return<AvatarCrocSVG size={size}/>;
-  if(id==="goat")    return<AvatarGoatSVG size={size}/>;
-  if(id==="cat")     return<AvatarCatSVG size={size}/>;
-  if(id==="cow")     return<AvatarCowSVG size={size}/>;
-  if(id==="giraffe") return<AvatarGiraffeSVG size={size}/>;
-  if(id==="dino")    return<AvatarDinoSVG size={size}/>;
-  if(id==="sloth")   return<AvatarSlothSVG size={size}/>;
-  return<AvatarDuckSVG size={size} duck={duck}/>;
-}
 
 const BASE_WORDS = {
   "⚡ Electronics & Circuits": {
@@ -620,7 +752,7 @@ const SENTENCE_DATA=[
 const CATEGORIES=Object.keys(BASE_WORDS);
 const ALL_BASE=CATEGORIES.flatMap(cat=>["easy","medium","hard"].flatMap(lvl=>(BASE_WORDS[cat][lvl]||[]).map(w=>({...w,category:cat,level:lvl}))));
 const MAX_LIVES=10;
-const RESET_MS=4*60*60*1000;
+function nextMidnight(){const d=new Date();d.setDate(d.getDate()+1);d.setHours(0,0,0,0);return d.getTime();}
 const DUCK_STAGES=[
   {min:0,size:44,smart:0,color:"#fde68a",name:"ברווזון תינוק 🐣"},
   {min:8,size:52,smart:20,color:"#fcd34d",name:"ברווז סקרן 🐥"},
@@ -850,6 +982,14 @@ body{font-family:'Heebo',sans-serif;-webkit-tap-highlight-color:transparent;}
 .btn:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-2px);}
 .btn:active:not(:disabled){transform:translateY(0)scale(0.97);}
 input,select,textarea{font-family:'Heebo',sans-serif;}
+@keyframes duckBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes duckSway{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-9deg)}75%{transform:rotate(9deg)}}
+@keyframes duckStrut{0%,100%{transform:translate(0,0)rotate(0)}33%{transform:translate(-4px,-1px)rotate(-5deg)}66%{transform:translate(4px,-1px)rotate(5deg)}}
+@keyframes duckBounce{0%,100%{transform:translateY(0)scaleY(1)}38%{transform:translateY(-15px)scaleY(1.05)}52%{transform:translateY(-15px)scaleY(1.05)}88%{transform:translateY(3px)scaleY(0.96)}}
+@keyframes duckNinja{0%,65%,100%{transform:rotate(0)translateX(0)}70%{transform:rotate(-22deg)translateX(-6px)scale(1.05)}75%{transform:rotate(22deg)translateX(6px)scale(1.05)}80%{transform:rotate(0)translateX(0)}}
+@keyframes duckFloat{0%,100%{transform:translateY(0)rotate(0)}50%{transform:translateY(-6px)rotate(-2deg)}}
+@keyframes duckMagic{0%,100%{transform:translateY(0)rotate(0deg)scale(1)}30%{transform:translateY(-9px)rotate(-4deg)scale(1.03)}70%{transform:translateY(-5px)rotate(4deg)scale(1.02)}}
+@keyframes duckGolden{0%,100%{transform:translateY(0)scale(1);filter:drop-shadow(0 0 7px #fbbf24)}50%{transform:translateY(-7px)scale(1.04);filter:drop-shadow(0 0 20px #fbbf24)brightness(1.14)}}
 @keyframes duckSomersault{0%{transform:translateY(0)rotate(0deg)scale(1)}20%{transform:translateY(-55px)rotate(72deg)scale(1.18)}40%{transform:translateY(-90px)rotate(144deg)scale(1.28)}60%{transform:translateY(-65px)rotate(216deg)scale(1.22)}80%{transform:translateY(-22px)rotate(288deg)scale(1.1)}100%{transform:translateY(0)rotate(360deg)scale(1)}}
 @keyframes letterPop{0%{opacity:0;transform:translateY(-28px)scale(2)rotate(-18deg);filter:blur(5px)}60%{opacity:1;transform:translateY(5px)scale(0.92)rotate(2deg);filter:blur(0)}80%{transform:translateY(-2px)scale(1.06)rotate(-1deg)}100%{opacity:1;transform:translateY(0)scale(1)rotate(0deg)}}
 @keyframes splashFadeOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.04)}}
@@ -863,7 +1003,7 @@ function BigTimer({resetAt,lang}){
   useEffect(()=>{const t=setInterval(()=>setRem(Math.max(0,resetAt-Date.now())),1000);return()=>clearInterval(t);},[resetAt]);
   return(
     <div style={{textAlign:"center",padding:"10px 0"}}>
-      <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:4,letterSpacing:2}}>{lang==="en"?"🔄 LIVES RESET IN":"🔄 ברווזים חוזרים בעוד"}</div>
+      <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:4,letterSpacing:2}}>{lang==="en"?"🌙 LIVES RESET AT MIDNIGHT":"🌙 חיים מתאפסים בחצות"}</div>
       <div style={{fontSize:46,fontWeight:900,color:"#f59e0b",fontVariantNumeric:"tabular-nums",letterSpacing:4,textShadow:"0 0 20px rgba(245,158,11,0.5)"}}>{fmt(rem)}</div>
       <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginTop:4,letterSpacing:4}}>{lang==="en"?"HH : MM : SS":"שע : דק : שנ"}</div>
     </div>
@@ -1088,7 +1228,7 @@ function SentenceScreen({state,setState,onHome,onBack}){
     setState(prev=>{
       const newLives=ok?prev.lives:Math.max(0,prev.lives-1);
       const streakUpdate=calcStreaks(prev);
-      const n={...prev,total:prev.total+1,correct:prev.correct+(ok?1:0),streak:ok?prev.streak+1:0,bestStreak:ok?Math.max(prev.bestStreak,prev.streak+1):prev.bestStreak,xp:prev.xp+xpGain,lives:newLives,resetAt:newLives===0&&!prev.resetAt?Date.now()+RESET_MS:prev.resetAt,seen:ok?{...prev.seen,[word.en]:true}:prev.seen,...streakUpdate};
+      const n={...prev,total:prev.total+1,correct:prev.correct+(ok?1:0),streak:ok?prev.streak+1:0,bestStreak:ok?Math.max(prev.bestStreak,prev.streak+1):prev.bestStreak,xp:prev.xp+xpGain,lives:newLives,resetAt:newLives===0&&!prev.resetAt?nextMidnight():prev.resetAt,seen:ok?{...prev.seen,[word.en]:true}:prev.seen,...streakUpdate};
       saveS(n);return n;
     });
   }
@@ -1874,7 +2014,7 @@ function QuizScreen({category,state,setState,onHome,onBack}){
       const newXP=prev.xp+xpGain;
       const newLives=ok?prev.lives:Math.max(0,prev.lives-1);
       if(getLevel(newXP).name!==prevLevelRef.current){prevLevelRef.current=getLevel(newXP).name;setTimeout(()=>{setShowLevelUp(true);setTimeout(()=>setShowLevelUp(false),1500);},400);}
-      const newResetAt=newLives===0&&!prev.resetAt?Date.now()+RESET_MS:prev.resetAt;
+      const newResetAt=newLives===0&&!prev.resetAt?nextMidnight():prev.resetAt;
       const kw=prev.knownWords||[];
       const newKnownWords=ok&&!kw.find(w=>w.en===word.en)?[...kw,{en:word.en,he:word.he,category:word.category,level:word.level||selectedLevel}]:kw;
       const streakUpdate=calcStreaks(prev);
