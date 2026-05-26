@@ -1448,15 +1448,159 @@ function AvatarSelectModal({state,setState,onClose}){
 
 const KNOWLEDGE_BASE=[
   {id:"analog",icon:"〰️",color:"#f472b6",name:"אלקטרוניקה תקבילית",
-   hook:"עולם האותות הרציפים — הממשק בין הפיזיקה לאלקטרוניקה",
+   hook:"מחוק אוהם ועד Op-Amp — מתמטיקה מלאה, נוסחאות ורכיבים",
    sections:[
-     {h:"מהי אלקטרוניקה תקבילית?",t:"אלקטרוניקה תקבילית (Analog Electronics) עוסקת בעיבוד אותות חשמליים המשתנים באופן רציף לאורך הזמן. האות התקבילי מייצג כמויות פיזיות כגון קול, טמפרטורה, לחץ ואור — וכל גוון בגל נושא מידע. בניגוד לאלקטרוניקה ספרתית שעובדת ב-0 ו-1 בלבד, כאן ערכי הביניים הם בעלי משמעות מלאה."},
-     {h:"חוקי הבסיס",items:["חוק אוהם: V = I × R — המתח שווה לזרם כפול ההתנגדות","חוק KVL (קירכהוף למתחות): סכום המתחות בלולאה סגורה = 0","חוק KCL (קירכהוף לזרמות): סכום הזרמים בצומת = 0","הספק: P = V × I = I²R = V²/R"]},
-     {h:"מגבר פעולה — Op-Amp",t:"המגבר הפעולה (Operational Amplifier) הוא אבן הבניין המרכזית של האלקטרוניקה התקבילית. מדובר במעגל משולב עם שתי כניסות דיפרנציאליות ורווח פתוח גבוה מאד (עד 10⁶). בעזרת משוב שלילי ניתן לממש: מגברים בדיוק גבוה, מסננים אקטיביים, ממירי מתח-זרם, אינטגרטורים, דיפרנציאטורים, ממשקי חיישנים ומחברים. פרמטרים מרכזיים: CMRR (דחיית מצב משותף), עכבת כניסה גבוהה, רוחב סרט GBW, Slew Rate."},
-     {h:"מסננים (Filters)",items:["LPF — מסנן מעביר נמוכים: מעביר תדרים מתחת לתדר חיתוך fc","HPF — מסנן מעביר גבוהים: מעביר תדרים מעל fc","BPF — מסנן מעביר רצועה: מעביר טווח תדרים ספציפי","Notch Filter: חוסם תדר יחיד (לדוגמה: רעש רשת 50 Hz)","Butterworth/Chebyshev/Bessel: סוגי פולינומים השולטים בצורת המסנן"]},
-     {h:"יישומים מרכזיים",t:"מגברי שמע ומוסיקה, ממשקי חיישנים (PT100, תרמוקפלים, מד-לחץ), מסננים להורדת רעש, מנעול פאזה (PLL) להסנכרון תדרים, מגברי מדידה (Instrumentation Amp) ברמת דיוק μV, וממשקי ADC/DAC לגישור לעולם הדיגיטלי."}
+     {h:"סקירה — תקבילית א' וב'",
+      t:"קורסי אלקטרוניקה תקבילית הם אבן היסוד של הנדסת החומרה. תקבילית א' מתמקדת ברכיבים פסיביים (R, C, L), דיודות וטרנזיסטור BJT. תקבילית ב' מתמקדת ב-MOSFET ומגבר השרת (Op-Amp). הגישה: פיזיקה של הרכיב → מודל מתמטי → ניתוח מעגל שלם."
+     },
+     {h:"1. חוק אוהם",
+      formulas:[
+        {form:"V = I × R",desc:"מתח (V) = זרם (A) × התנגדות (Ω)"},
+        {form:"I = V / R",desc:"זרם = מתח חלקי התנגדות"},
+        {form:"P = V × I = I²R = V²/R",desc:"הספק מפוזר כחום (W)"}
+      ],
+      t:"הקשר הלינארי בין מתח, זרם והתנגדות. תקף לנגדים בלבד — דיודה, BJT ו-MOSFET אינם לינאריים."
+     },
+     {h:"2. חוקי קירכהוף",
+      formulas:[
+        {form:"KCL:  Σ Iₖ = 0  (בכל צומת)",desc:"שימור מטען — מה שנכנס חייב לצאת"},
+        {form:"KVL:  Σ Vₖ = 0  (בכל לולאה)",desc:"שימור אנרגיה — סכום נפילות = סכום מקורות"}
+      ],
+      items:[
+        "ניתוח צמתים (Nodal Analysis): כתיבת KCL לכל צומת, פתרון מערכת משוואות",
+        "ניתוח לולאות (Mesh Analysis): KVL לכל לולאה — שיטתי למעגלים מורכבים",
+        "משפט תוונן (Thevenin): כל רשת לינארית = V_th בטורי עם R_th",
+        "משפט נורטון (Norton): I_N מקביל ל-R_N — שקול לתוונן"
+      ]
+     },
+     {h:"3. עכבה מרוכבת — אותות AC",
+      formulas:[
+        {form:"ω = 2πf",desc:"תדר זווי (rad/s) — f בהרץ"},
+        {form:"Z = V̂ / Î  (מרוכב)",desc:"חוק אוהם המוכלל לאותות חילופין"},
+        {form:"|Z| = √(R² + X²)",desc:"גודל העכבה — X הוא הרכיב הריאקטיבי"},
+        {form:"φ = arctan(X / R)",desc:"זווית פאזה בין מתח לזרם (מעלות)"}
+      ],
+      t:"קבל וסליל מגיבים אחרת לכל תדר. משתמשים במספרים מרוכבים (j = √−1) כדי לייצג גם עוצמה וגם פאזה במשוואה אחת."
+     },
+     {h:"4. נגד (Resistor — R)",
+      formulas:[
+        {form:"Z_R = R",desc:"עכבה קבועה — אינה תלויה בתדר, פאזה = 0°"},
+        {form:"V_out/V_in = R₂ / (R₁ + R₂)",desc:"מחלק מתח (Voltage Divider)"},
+        {form:"R_series = R₁ + R₂ + ...",desc:"נגדים בטור"},
+        {form:"1/R_par = 1/R₁ + 1/R₂ + ...",desc:"נגדים במקביל"}
+      ],
+      items:[
+        "קובע נקודת עבודה (DC Bias) — הכי חשוב בתכנון מגברים",
+        "מגביל זרם LED: R = (V_cc − V_f) / I_LED",
+        "Pull-up / Pull-down: מייצב קו דיגיטלי ל-VCC או GND",
+        "ממיר זרם למתח (I×R=V) — בסיס Transimpedance Amplifier"
+      ]
+     },
+     {h:"5. קבל (Capacitor — C)",
+      formulas:[
+        {form:"I = C × dV/dt",desc:"זרם = קיבול × קצב שינוי מתח"},
+        {form:"Z_C = 1 / (jωC)",desc:"עכבה יורדת עם עליית תדר"},
+        {form:"|Z_C| = 1 / (ωC)",desc:"גודל העכבה (Ω)"},
+        {form:"f_c = 1 / (2πRC)",desc:"תדר חיתוך של מסנן RC (−3 dB)"},
+        {form:"E = ½ × C × V²",desc:"אנרגיה מאוחסנת (ג'ול)"}
+      ],
+      items:[
+        "DC (ω→0): Z_C→∞ — מפסק פתוח, חוסם DC לחלוטין",
+        "תדר גבוה (ω→∞): Z_C→0 — קצר, מעביר AC חופשי",
+        "קבל צימוד (Coupling): מעביר אות AC, חוסם הטיית DC בין דרגות",
+        "קבל עקיפה (Bypass): מוריד רעש ל-GND, מייצב ב Vcc",
+        "ESR (התנגדות טורית שקולה): גורם אובדן — בחר נמוך ל-SMPS"
+      ]
+     },
+     {h:"6. סליל (Inductor — L)",
+      formulas:[
+        {form:"V = L × dI/dt",desc:"מתח = השראות × קצב שינוי זרם"},
+        {form:"Z_L = jωL",desc:"עכבה עולה עם עליית תדר"},
+        {form:"|Z_L| = ωL",desc:"גודל העכבה (Ω)"},
+        {form:"f₀ = 1 / (2π√LC)",desc:"תדר תהודה של מעגל LC (Hz)"},
+        {form:"E = ½ × L × I²",desc:"אנרגיה מאוחסנת בשדה מגנטי (ג'ול)"}
+      ],
+      items:[
+        "DC: Z_L→0 — קצר, מעביר DC ללא הפסד (אידאלי)",
+        "תדר גבוה: Z_L→∞ — חוסם AC (משנק — Choke)",
+        "מתנגד לשינויים פתאומיים בזרם — הגנה מהלם",
+        "מעגל LC: תהודה בתדר f₀ — בסיס מדייני, רדיו וממירי הספק",
+        "שנאי (Transformer): שני סלילים מצומדים — ממיר רמות מתח"
+      ]
+     },
+     {h:"7. דיודה (Diode) — שסתום חשמלי",
+      formulas:[
+        {form:"I = Iₛ × (e^(V/Vₜ) − 1)",desc:"משוואת שוקלי — מודל המעבר PN"},
+        {form:"Vₜ = kT/q ≈ 26 mV  (T=300K)",desc:"מתח תרמי בטמפרטורת החדר"},
+        {form:"V_forward ≈ 0.6–0.7 V",desc:"נפילת מתח קדימה — סיליקון"},
+        {form:"V_forward ≈ 0.2–0.3 V",desc:"נפילת מתח — שוטקי (מהירה יותר)"}
+      ],
+      items:[
+        "מוליכה רק בכיוון קדימה (Anode⁺ → Cathode⁻)",
+        "דיודת זנר: V_Z קבוע בפעולה הפוכה — מייצבת מתח",
+        "גשר דיודות: ממיר AC ל-DC (Full-Wave Rectifier)",
+        "LED: אלקטרון 'נופל' לרמה — פולט פוטון (אור)",
+        "PIN Diode: מהירה ל-RF, פוטודיודה בפיזיקה אופטית"
+      ]
+     },
+     {h:"8. טרנזיסטור BJT (NPN / PNP)",
+      formulas:[
+        {form:"I_C = β × I_B",desc:"זרם קולקטור = הגבר × זרם בסיס"},
+        {form:"β = I_C / I_B",desc:"גורם הגבר טיפוסי: β = 50–500"},
+        {form:"I_E = I_C + I_B",desc:"זרם פולט (Emitter) = קולקטור + בסיס"},
+        {form:"g_m = I_C / Vₜ",desc:"הולכה טרנסקונדוקטנסית (מודל π קטן)"},
+        {form:"Aᵥ = −g_m × R_C",desc:"גבר מתח של דרגת פולט משותף (CE)"}
+      ],
+      t:"ניתוח DC: קביעת נקודת עבודה Q על קו עומס (Load Line) — ε הטרנזיסטור יישאר באזור פעיל. ניתוח AC: מחליפים BJT במודל π (g_m, r_π, r_o) וחישוב גבר המתח והזרם של המעגל השלם."
+     },
+     {h:"9. MOSFET (N-channel Enhancement)",
+      formulas:[
+        {form:"I_D = (k/2)(V_GS − V_th)²",desc:"זרם Drain באזור רוויה — אזור הגברה"},
+        {form:"k = μₙCₒₓ(W/L)",desc:"פרמטר הטרנזיסטור — תלוי גאומטריה וחומר"},
+        {form:"I_G = 0",desc:"זרם שער = אפס → R_in → ∞"},
+        {form:"g_m = √(2k × I_D)",desc:"הולכה טרנסקונדוקטנסית של MOSFET"},
+        {form:"Aᵥ = −g_m × R_D",desc:"גבר מתח של דרגת Source משותף (CS)"}
+      ],
+      items:[
+        "נשלט מתח V_GS — לא זרם, לכן R_in → ∞ (לא מעמיס על דרגה קודמת)",
+        "אזור ליניארי (Triode): V_DS < V_GS−V_th — פועל כמתג",
+        "אזור רוויה (Saturation): V_DS > V_GS−V_th — פועל כמגבר",
+        "CMOS = NMOS+PMOS: P_static ≈ 0 — בסיס כל שבב דיגיטלי",
+        "FinFET (3D Transistor): מ-22nm ומטה, מפחית Leakage"
+      ]
+     },
+     {h:"10. מגבר שרת — Op-Amp",
+      formulas:[
+        {form:"Aᵥ = −Rf / Rin",desc:"גבר מגבר הופך (Inverting Amplifier)"},
+        {form:"Aᵥ = 1 + Rf / R₁",desc:"גבר מגבר לא-הופך (Non-Inverting)"},
+        {form:"V_out = −(1/RC) ∫V_in dt",desc:"אינטגרטור — קבל במשוב"},
+        {form:"V_out = −RC × dV_in/dt",desc:"גוזר (Differentiator) — קבל בכניסה"},
+        {form:"GBW = Aᵥ × f_3dB = קבוע",desc:"מכפלת גבר-רוחב סרט קבועה לכל Op-Amp"}
+      ],
+      items:[
+        "כלל זהב 1 — קצר וירטואלי: V₊ = V₋ (כאשר יש משוב שלילי)",
+        "כלל זהב 2 — אין זרמי כניסה: I₊ = I₋ = 0",
+        "CMRR ≥ 80 dB לאיכותי — מדד לדחיית רעש משותף",
+        "מסנן Sallen-Key (סדר 2): Butterworth/Chebyshev עם Op-Amp",
+        "Instrumentation Amp (INA): 3 Op-Amp, CMRR גבוה מאד לחיישנים"
+      ]
+     },
+     {h:"11. מסננים אקטיביים",
+      formulas:[
+        {form:"f_c = 1 / (2π√(R₁R₂C₁C₂))",desc:"תדר חיתוך Sallen-Key סדר 2"},
+        {form:"Q = (1/2) × √(C₂/C₁) × √(R₁R₂) / ...",desc:"גורם איכות — שולט בחידות (Peaking)"},
+        {form:"H(jω) = 1 / (1 + jω/ωc)ⁿ",desc:"פונקציית העברה Butterworth סדר n"}
+      ],
+      items:[
+        "LPF — מעביר נמוכים: מסנן רעש, Anti-Aliasing לפני ADC",
+        "HPF — מעביר גבוהים: מסלק DC ורעש נמוך מאות",
+        "BPF — מעביר רצועה: בוחר ערוץ בתקשורת, EQ שמע",
+        "Notch (Band-Stop): חוסם 50/60 Hz מרשת חשמל",
+        "Butterworth: שטוח מקסימלי | Chebyshev: נפילה תלולה | Bessel: פאזה קבועה"
+      ]
+     }
    ],
-   terms:["Op-Amp","KVL","KCL","LPF","HPF","BPF","CMRR","Slew Rate","GBW","Butterworth","Chebyshev","PLL","Instrumentation Amp"]
+   terms:["KVL","KCL","Thevenin","Norton","Z_C","Z_L","BJT","β","g_m","MOSFET","V_th","k_n","Op-Amp","CMRR","GBW","Slew Rate","Inverting","Non-Inverting","Sallen-Key","Butterworth","Chebyshev","Instrumentation Amp","Coupling Cap","Bypass","Biasing","Load Line","Mesh","Nodal"]
   },
   {id:"digital",icon:"💻",color:"#22d3ee",name:"אלקטרוניקה ספרתית",
    hook:"לוגיקה בינארית, שערים ומחשבים — הבסיס של כל מערכת מודרנית",
@@ -1630,6 +1774,16 @@ function KnowledgeScreen({onBack}){
                         {sec.h}
                       </div>
                       {sec.t&&<div style={{fontSize:12,color:"rgba(255,255,255,0.72)",lineHeight:1.65,textAlign:"right"}}>{sec.t}</div>}
+                      {sec.formulas&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:5,marginTop:6,marginBottom:4}}>
+                          {sec.formulas.map((f,fi)=>(
+                            <div key={fi} style={{background:`${cat.color}10`,border:`1px solid ${cat.color}30`,borderRadius:9,padding:"8px 12px"}}>
+                              <div style={{fontSize:12.5,fontWeight:800,color:cat.color,fontFamily:"'Courier New',monospace",letterSpacing:0.3,direction:"ltr",textAlign:"left"}}>{f.form}</div>
+                              {f.desc&&<div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:3,textAlign:"right"}}>{f.desc}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {sec.items&&(
                         <div style={{display:"flex",flexDirection:"column",gap:5,marginTop:4}}>
                           {sec.items.map((item,ii)=>(
