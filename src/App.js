@@ -1455,16 +1455,16 @@ const KNOWLEDGE_BASE=[
      },
      {h:"1. חוק אוהם",
       formulas:[
-        {form:"V = I × R",desc:"מתח (V) = זרם (A) × התנגדות (Ω)"},
-        {form:"I = V / R",desc:"זרם = מתח חלקי התנגדות"},
-        {form:"P = V × I = I²R = V²/R",desc:"הספק מפוזר כחום (W)"}
+        {latex:"V = I \\times R",desc:"מתח (V) = זרם (A) × התנגדות (Ω)"},
+        {latex:"I = \\frac{V}{R}",desc:"זרם = מתח חלקי התנגדות"},
+        {latex:"P = V \\times I = I^{2}R = \\frac{V^{2}}{R}",desc:"הספק מפוזר כחום (W)"}
       ],
       t:"הקשר הלינארי בין מתח, זרם והתנגדות. תקף לנגדים בלבד — דיודה, BJT ו-MOSFET אינם לינאריים."
      },
      {h:"2. חוקי קירכהוף",
       formulas:[
-        {form:"KCL:  Σ Iₖ = 0  (בכל צומת)",desc:"שימור מטען — מה שנכנס חייב לצאת"},
-        {form:"KVL:  Σ Vₖ = 0  (בכל לולאה)",desc:"שימור אנרגיה — סכום נפילות = סכום מקורות"}
+        {latex:"\\Sigma I_{k} = 0",desc:"KCL — שימור מטען (בכל צומת)"},
+        {latex:"\\Sigma V_{k} = 0",desc:"KVL — שימור אנרגיה (בכל לולאה)"}
       ],
       items:[
         "ניתוח צמתים (Nodal Analysis): כתיבת KCL לכל צומת, פתרון מערכת משוואות",
@@ -1475,19 +1475,19 @@ const KNOWLEDGE_BASE=[
      },
      {h:"3. עכבה מרוכבת — אותות AC",
       formulas:[
-        {form:"ω = 2πf",desc:"תדר זווי (rad/s) — f בהרץ"},
-        {form:"Z = V̂ / Î  (מרוכב)",desc:"חוק אוהם המוכלל לאותות חילופין"},
-        {form:"|Z| = √(R² + X²)",desc:"גודל העכבה — X הוא הרכיב הריאקטיבי"},
-        {form:"φ = arctan(X / R)",desc:"זווית פאזה בין מתח לזרם (מעלות)"}
+        {latex:"\\omega = 2\\pi f",desc:"תדר זווי (rad/s) — f בהרץ"},
+        {latex:"Z = \\frac{V}{I}",desc:"חוק אוהם המוכלל — V, I, Z מרוכבים"},
+        {latex:"|Z| = \\sqrt{R^{2}+X^{2}}",desc:"גודל העכבה — X הוא הרכיב הריאקטיבי"},
+        {latex:"\\phi = \\arctan \\frac{X}{R}",desc:"זווית פאזה בין מתח לזרם (מעלות)"}
       ],
       t:"קבל וסליל מגיבים אחרת לכל תדר. משתמשים במספרים מרוכבים (j = √−1) כדי לייצג גם עוצמה וגם פאזה במשוואה אחת."
      },
      {h:"4. נגד (Resistor — R)",
       formulas:[
-        {form:"Z_R = R",desc:"עכבה קבועה — אינה תלויה בתדר, פאזה = 0°"},
-        {form:"V_out/V_in = R₂ / (R₁ + R₂)",desc:"מחלק מתח (Voltage Divider)"},
-        {form:"R_series = R₁ + R₂ + ...",desc:"נגדים בטור"},
-        {form:"1/R_par = 1/R₁ + 1/R₂ + ...",desc:"נגדים במקביל"}
+        {latex:"Z_{R} = R",desc:"עכבה קבועה — אינה תלויה בתדר, פאזה = 0°"},
+        {latex:"\\frac{V_{out}}{V_{in}} = \\frac{R_{2}}{R_{1}+R_{2}}",desc:"מחלק מתח (Voltage Divider)"},
+        {latex:"R_{s} = R_{1}+R_{2}+...",desc:"נגדים בטור"},
+        {latex:"\\frac{1}{R_{p}} = \\frac{1}{R_{1}}+\\frac{1}{R_{2}}+...",desc:"נגדים במקביל"}
       ],
       items:[
         "קובע נקודת עבודה (DC Bias) — הכי חשוב בתכנון מגברים",
@@ -1498,11 +1498,11 @@ const KNOWLEDGE_BASE=[
      },
      {h:"5. קבל (Capacitor — C)",
       formulas:[
-        {form:"I = C × dV/dt",desc:"זרם = קיבול × קצב שינוי מתח"},
-        {form:"Z_C = 1 / (jωC)",desc:"עכבה יורדת עם עליית תדר"},
-        {form:"|Z_C| = 1 / (ωC)",desc:"גודל העכבה (Ω)"},
-        {form:"f_c = 1 / (2πRC)",desc:"תדר חיתוך של מסנן RC (−3 dB)"},
-        {form:"E = ½ × C × V²",desc:"אנרגיה מאוחסנת (ג'ול)"}
+        {latex:"I = C\\frac{dV}{dt}",desc:"זרם = קיבול × קצב שינוי מתח"},
+        {latex:"Z_{C} = \\frac{1}{j\\omega C}",desc:"עכבת קבל — יורדת עם עליית תדר"},
+        {latex:"|Z_{C}| = \\frac{1}{\\omega C}",desc:"גודל העכבה (Ω)"},
+        {latex:"f_{c} = \\frac{1}{2\\pi RC}",desc:"תדר חיתוך RC (−3 dB)"},
+        {latex:"E = \\frac{1}{2}CV^{2}",desc:"אנרגיה מאוחסנת (ג'ול)"}
       ],
       items:[
         "DC (ω→0): Z_C→∞ — מפסק פתוח, חוסם DC לחלוטין",
@@ -1514,11 +1514,11 @@ const KNOWLEDGE_BASE=[
      },
      {h:"6. סליל (Inductor — L)",
       formulas:[
-        {form:"V = L × dI/dt",desc:"מתח = השראות × קצב שינוי זרם"},
-        {form:"Z_L = jωL",desc:"עכבה עולה עם עליית תדר"},
-        {form:"|Z_L| = ωL",desc:"גודל העכבה (Ω)"},
-        {form:"f₀ = 1 / (2π√LC)",desc:"תדר תהודה של מעגל LC (Hz)"},
-        {form:"E = ½ × L × I²",desc:"אנרגיה מאוחסנת בשדה מגנטי (ג'ול)"}
+        {latex:"V = L\\frac{dI}{dt}",desc:"מתח = השראות × קצב שינוי זרם"},
+        {latex:"Z_{L} = j\\omega L",desc:"עכבת סליל — עולה עם עליית תדר"},
+        {latex:"|Z_{L}| = \\omega L",desc:"גודל העכבה (Ω)"},
+        {latex:"f_{0} = \\frac{1}{2\\pi\\sqrt{LC}}",desc:"תדר תהודה של מעגל LC (Hz)"},
+        {latex:"E = \\frac{1}{2}LI^{2}",desc:"אנרגיה מאוחסנת (ג'ול)"}
       ],
       items:[
         "DC: Z_L→0 — קצר, מעביר DC ללא הפסד (אידאלי)",
@@ -1530,10 +1530,10 @@ const KNOWLEDGE_BASE=[
      },
      {h:"7. דיודה (Diode) — שסתום חשמלי",
       formulas:[
-        {form:"I = Iₛ × (e^(V/Vₜ) − 1)",desc:"משוואת שוקלי — מודל המעבר PN"},
-        {form:"Vₜ = kT/q ≈ 26 mV  (T=300K)",desc:"מתח תרמי בטמפרטורת החדר"},
-        {form:"V_forward ≈ 0.6–0.7 V",desc:"נפילת מתח קדימה — סיליקון"},
-        {form:"V_forward ≈ 0.2–0.3 V",desc:"נפילת מתח — שוטקי (מהירה יותר)"}
+        {latex:"I = I_{S}(e^{V/V_{T}}-1)",desc:"משוואת שוקלי — מודל המעבר PN"},
+        {latex:"V_{T} = \\frac{kT}{q} \\approx 26\\,\\mathrm{mV}",desc:"מתח תרמי בטמפרטורת החדר (T=300K)"},
+        {latex:"V_{F} \\approx 0.6{-}0.7\\,\\mathrm{V}",desc:"נפילת מתח קדימה — סיליקון"},
+        {latex:"V_{F} \\approx 0.2{-}0.3\\,\\mathrm{V}",desc:"נפילת מתח — שוטקי (מהירה יותר)"}
       ],
       items:[
         "מוליכה רק בכיוון קדימה (Anode⁺ → Cathode⁻)",
@@ -1545,21 +1545,21 @@ const KNOWLEDGE_BASE=[
      },
      {h:"8. טרנזיסטור BJT (NPN / PNP)",
       formulas:[
-        {form:"I_C = β × I_B",desc:"זרם קולקטור = הגבר × זרם בסיס"},
-        {form:"β = I_C / I_B",desc:"גורם הגבר טיפוסי: β = 50–500"},
-        {form:"I_E = I_C + I_B",desc:"זרם פולט (Emitter) = קולקטור + בסיס"},
-        {form:"g_m = I_C / Vₜ",desc:"הולכה טרנסקונדוקטנסית (מודל π קטן)"},
-        {form:"Aᵥ = −g_m × R_C",desc:"גבר מתח של דרגת פולט משותף (CE)"}
+        {latex:"I_{C} = \\beta \\times I_{B}",desc:"זרם קולקטור = הגבר × זרם בסיס"},
+        {latex:"\\beta = \\frac{I_{C}}{I_{B}}",desc:"גורם הגבר טיפוסי: β = 50–500"},
+        {latex:"I_{E} = I_{C}+I_{B}",desc:"זרם פולט (Emitter) = קולקטור + בסיס"},
+        {latex:"g_{m} = \\frac{I_{C}}{V_{T}}",desc:"הולכה טרנסקונדוקטנסית (מודל π קטן)"},
+        {latex:"A_{v} = -g_{m} R_{C}",desc:"גבר מתח — Emitter משותף (CE)"}
       ],
       t:"ניתוח DC: קביעת נקודת עבודה Q על קו עומס (Load Line) — ε הטרנזיסטור יישאר באזור פעיל. ניתוח AC: מחליפים BJT במודל π (g_m, r_π, r_o) וחישוב גבר המתח והזרם של המעגל השלם."
      },
      {h:"9. MOSFET (N-channel Enhancement)",
       formulas:[
-        {form:"I_D = (k/2)(V_GS − V_th)²",desc:"זרם Drain באזור רוויה — אזור הגברה"},
-        {form:"k = μₙCₒₓ(W/L)",desc:"פרמטר הטרנזיסטור — תלוי גאומטריה וחומר"},
-        {form:"I_G = 0",desc:"זרם שער = אפס → R_in → ∞"},
-        {form:"g_m = √(2k × I_D)",desc:"הולכה טרנסקונדוקטנסית של MOSFET"},
-        {form:"Aᵥ = −g_m × R_D",desc:"גבר מתח של דרגת Source משותף (CS)"}
+        {latex:"I_{D} = \\frac{k}{2}(V_{GS}-V_{th})^{2}",desc:"זרם Drain — אזור רוויה (Saturation)"},
+        {latex:"k = \\mu_{n}C_{ox}(W/L)",desc:"פרמטר הטרנזיסטור — גאומטריה וחומר"},
+        {latex:"I_{G} = 0",desc:"זרם שער = אפס ← התנגדות כניסה אינסופית"},
+        {latex:"g_{m} = \\sqrt{2kI_{D}}",desc:"הולכה טרנסקונדוקטנסית של MOSFET"},
+        {latex:"A_{v} = -g_{m}R_{D}",desc:"גבר מתח — Source משותף (CS)"}
       ],
       items:[
         "נשלט מתח V_GS — לא זרם, לכן R_in → ∞ (לא מעמיס על דרגה קודמת)",
@@ -1571,11 +1571,11 @@ const KNOWLEDGE_BASE=[
      },
      {h:"10. מגבר שרת — Op-Amp",
       formulas:[
-        {form:"Aᵥ = −Rf / Rin",desc:"גבר מגבר הופך (Inverting Amplifier)"},
-        {form:"Aᵥ = 1 + Rf / R₁",desc:"גבר מגבר לא-הופך (Non-Inverting)"},
-        {form:"V_out = −(1/RC) ∫V_in dt",desc:"אינטגרטור — קבל במשוב"},
-        {form:"V_out = −RC × dV_in/dt",desc:"גוזר (Differentiator) — קבל בכניסה"},
-        {form:"GBW = Aᵥ × f_3dB = קבוע",desc:"מכפלת גבר-רוחב סרט קבועה לכל Op-Amp"}
+        {latex:"A_{v} = -\\frac{R_{f}}{R_{in}}",desc:"מגבר הופך (Inverting Amplifier)"},
+        {latex:"A_{v} = 1+\\frac{R_{f}}{R_{1}}",desc:"מגבר לא-הופך (Non-Inverting)"},
+        {latex:"V_{out} = -\\frac{1}{RC}\\int V_{in}\\,dt",desc:"אינטגרטור — קבל במשוב"},
+        {latex:"V_{out} = -RC\\frac{dV_{in}}{dt}",desc:"גוזר (Differentiator) — קבל בכניסה"},
+        {latex:"\\mathrm{GBW} = A_{v} \\times f_{c} = \\mathrm{const}",desc:"מכפלת גבר-רוחב סרט קבועה לכל Op-Amp"}
       ],
       items:[
         "כלל זהב 1 — קצר וירטואלי: V₊ = V₋ (כאשר יש משוב שלילי)",
@@ -1587,9 +1587,9 @@ const KNOWLEDGE_BASE=[
      },
      {h:"11. מסננים אקטיביים",
       formulas:[
-        {form:"f_c = 1 / (2π√(R₁R₂C₁C₂))",desc:"תדר חיתוך Sallen-Key סדר 2"},
-        {form:"Q = (1/2) × √(C₂/C₁) × √(R₁R₂) / ...",desc:"גורם איכות — שולט בחידות (Peaking)"},
-        {form:"H(jω) = 1 / (1 + jω/ωc)ⁿ",desc:"פונקציית העברה Butterworth סדר n"}
+        {latex:"f_{c} = \\frac{1}{2\\pi\\sqrt{R_{1}R_{2}C_{1}C_{2}}}",desc:"תדר חיתוך Sallen-Key סדר 2"},
+        {latex:"Q = \\frac{\\omega_{0}}{\\Delta\\omega}",desc:"גורם איכות — רוחב הסרט סביב התהודה"},
+        {latex:"H(j\\omega) = \\frac{1}{(1+j\\omega/\\omega_{c})^{n}}",desc:"פונקציית העברה Butterworth סדר n"}
       ],
       items:[
         "LPF — מעביר נמוכים: מסנן רעש, Anti-Aliasing לפני ADC",
@@ -1736,6 +1736,76 @@ const KNOWLEDGE_BASE=[
   },
 ];
 
+const MSYM={omega:"ω",Omega:"Ω",beta:"β",pi:"π",phi:"φ",Phi:"Φ",mu:"μ",alpha:"α",sigma:"σ",Sigma:"Σ",lambda:"λ",Delta:"Δ",delta:"δ",infty:"∞",approx:"≈",times:"×",cdot:"·",geq:"≥",leq:"≤",pm:"±",rho:"ρ",theta:"θ",int:"∫",partial:"∂",to:"→",arctan:"arctan",ln:"ln",sin:"sin",cos:"cos"};
+function parseMath(src,col){
+  let p=0,kid=0,noIt=false;
+  const K=()=>String(kid++);
+  function braced(){
+    if(src[p]==='{'){p++;const g=grp('}');if(src[p]==='}')p++;return g;}
+    const a=atm();return a?[a]:[];
+  }
+  function grp(until){
+    const els=[];
+    while(p<src.length&&src[p]!==until){const a=atm();if(a!=null)els.push(a);}
+    return els;
+  }
+  function scr(base){
+    let r=base;
+    while(p<src.length&&(src[p]==='^'||src[p]==='_')){
+      const k=src[p++];const sc=braced();
+      r=k==='^'
+        ?<span key={K()} style={{display:"inline-flex",alignItems:"flex-start",lineHeight:1}}>{r}<sup style={{fontSize:"0.58em",marginTop:"-0.3em",lineHeight:1}}>{sc}</sup></span>
+        :<span key={K()} style={{display:"inline-flex",alignItems:"flex-end",lineHeight:1}}>{r}<sub style={{fontSize:"0.58em",marginBottom:"-0.15em",lineHeight:1}}>{sc}</sub></span>;
+    }
+    return r;
+  }
+  function atm(){
+    if(p>=src.length)return null;
+    const ch=src[p];
+    if(ch===' '){p++;return<span key={K()} style={{display:"inline-block",minWidth:"0.22em"}}/>;}
+    if(ch==='\\'){
+      p++;
+      if(p<src.length&&src[p]===','){p++;return<span key={K()} style={{display:"inline-block",minWidth:"0.14em"}}/>;}
+      if(p<src.length&&src[p]===';'){p++;return<span key={K()} style={{display:"inline-block",minWidth:"0.26em"}}/>;}
+      let cmd='';
+      while(p<src.length&&/[a-zA-Z]/.test(src[p]))cmd+=src[p++];
+      if(cmd==='frac'){
+        const n=braced(),d=braced();
+        return scr(
+          <span key={K()} style={{display:"inline-flex",flexDirection:"column",alignItems:"center",verticalAlign:"middle",margin:"0 1px",lineHeight:1}}>
+            <span style={{borderBottom:`1.5px solid ${col}`,padding:"0 4px 2px",lineHeight:1.3,fontSize:"0.84em",textAlign:"center",minWidth:8}}>{n}</span>
+            <span style={{padding:"2px 4px 0",lineHeight:1.3,fontSize:"0.84em",textAlign:"center",minWidth:8}}>{d}</span>
+          </span>
+        );
+      }
+      if(cmd==='sqrt'){
+        const c=braced();
+        return scr(
+          <span key={K()} style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}>
+            <span style={{fontSize:"1.25em",lineHeight:0.9,paddingBottom:1}}>√</span>
+            <span style={{borderTop:`1.5px solid ${col}`,padding:"1px 3px 0 0",lineHeight:1.3}}>{c}</span>
+          </span>
+        );
+      }
+      if(cmd==='mathrm'||cmd==='text'){const prev=noIt;noIt=true;const c=braced();noIt=prev;return<span key={K()}>{c}</span>;}
+      if(cmd==='left'||cmd==='right'){if(p<src.length&&src[p]!=='\\'&&src[p]!==' ')p++;return null;}
+      if(MSYM[cmd]!=null){return scr(<span key={K()}>{MSYM[cmd]}</span>);}
+      return<span key={K()} style={{fontStyle:"normal"}}>{cmd}</span>;
+    }
+    if(ch==='{'){const c=braced();return scr(<span key={K()}>{c}</span>);}
+    p++;
+    const base=/[A-Za-z]/.test(ch)&&!noIt
+      ?<em key={K()} style={{fontStyle:"italic",fontWeight:500}}>{ch}</em>
+      :<span key={K()}>{ch}</span>;
+    return scr(base);
+  }
+  return(
+    <span style={{display:"inline-flex",alignItems:"center",flexWrap:"wrap",fontFamily:"'Georgia','Times New Roman',serif",fontSize:15,color:col,lineHeight:2.2,letterSpacing:0.2,gap:0}}>
+      {grp(null)}
+    </span>
+  );
+}
+
 function KnowledgeScreen({onBack}){
   const[openId,setOpenId]=useState(null);
   const[search,setSearch]=useState("");
@@ -1775,11 +1845,18 @@ function KnowledgeScreen({onBack}){
                       </div>
                       {sec.t&&<div style={{fontSize:12,color:"rgba(255,255,255,0.72)",lineHeight:1.65,textAlign:"right"}}>{sec.t}</div>}
                       {sec.formulas&&(
-                        <div style={{display:"flex",flexDirection:"column",gap:5,marginTop:6,marginBottom:4}}>
+                        <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:8,marginBottom:4}}>
                           {sec.formulas.map((f,fi)=>(
-                            <div key={fi} style={{background:`${cat.color}10`,border:`1px solid ${cat.color}30`,borderRadius:9,padding:"8px 12px"}}>
-                              <div style={{fontSize:12.5,fontWeight:800,color:cat.color,fontFamily:"'Courier New',monospace",letterSpacing:0.3,direction:"ltr",textAlign:"left"}}>{f.form}</div>
-                              {f.desc&&<div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:3,textAlign:"right"}}>{f.desc}</div>}
+                            <div key={fi} style={{background:"rgba(0,0,0,0.32)",borderLeft:`3px solid ${cat.color}`,borderRadius:"0 10px 10px 0",padding:"10px 14px 8px 12px",boxShadow:`inset 0 0 0 1px ${cat.color}12`}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",minHeight:34}}>
+                                <div style={{direction:"ltr",flex:1,overflow:"hidden"}}>
+                                  {f.latex
+                                    ?parseMath(f.latex,cat.color)
+                                    :<span style={{fontFamily:"'Courier New',monospace",fontSize:12.5,color:cat.color,fontWeight:700}}>{f.form}</span>}
+                                </div>
+                                <span style={{fontSize:10,color:`${cat.color}55`,fontFamily:"'Georgia',serif",marginLeft:8,flexShrink:0,letterSpacing:1}}>({fi+1})</span>
+                              </div>
+                              {f.desc&&<div style={{fontSize:11,color:"rgba(255,255,255,0.44)",marginTop:5,paddingTop:5,borderTop:`1px solid ${cat.color}18`,textAlign:"right",lineHeight:1.5}}>{f.desc}</div>}
                             </div>
                           ))}
                         </div>
