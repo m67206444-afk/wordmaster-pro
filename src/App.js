@@ -1605,13 +1605,71 @@ const KNOWLEDGE_BASE=[
   {id:"digital",icon:"💻",color:"#22d3ee",name:"אלקטרוניקה ספרתית",
    hook:"לוגיקה בינארית, שערים ומחשבים — הבסיס של כל מערכת מודרנית",
    sections:[
-     {h:"המערכת הבינארית",t:"אלקטרוניקה ספרתית מיוצגת על ידי שני מצבים: '0' (מתח נמוך, בדרך-כלל 0 V) ו-'1' (מתח גבוה, כגון 3.3 V או 5 V). מייצוג זה מתאים לרכיבים כגון טרנזיסטורים הפועלים כמתגים. אלגברת בוליאן (George Boole, 1854) מספקת את המסגרת המתמטית לעיבוד מידע בינארי."},
-     {h:"שערים לוגיים",items:["AND: פלט 1 רק כאשר שני הכניסות הן 1","OR: פלט 1 כאשר לפחות כניסה אחת היא 1","NOT: היפוך — 0 הופך ל-1 ולהיפך","NAND / NOR: שערים אוניברסלים — כל פונקציה לוגית ניתנת לביצוע בעזרתם","XOR: פלט 1 כאשר הכניסות שונות זו מזו"]},
-     {h:"לוגיקה רצפית — Flip-Flops",t:"בניגוד למעגלים קומבינטוריים, מעגלים רצפיים מחזיקים זיכרון. ה-Flip-Flop הוא יחידת הזיכרון הבסיסית: D-FF, JK-FF, SR-FF, T-FF. מניין (Counter), רשומת הזזה (Shift Register) ומכונות מצב (FSM) בנויים מ-Flip-Flops. שעון מסנכרן את המערכת."},
-     {h:"FPGA ו-CPLD",t:"מכשירים לוגיים הניתנים לתכנות (Programmable Logic Devices). ה-FPGA (שדה-שערים מתוכנת) מכיל מאות אלפי תאים לוגיים הניתנים לחיבור מחדש דרך תוכנה. מתוכנת ב-VHDL או Verilog. נמצא בשימוש ב: אבות-טיפוס של IC, עיבוד אות בזמן אמת, תקשורת ובינה מלאכותית."},
-     {h:"משפחות לוגיות",items:["TTL (Transistor-Transistor Logic): מהירה, צריכת הספק בינונית","CMOS: צריכת הספק נמוכה מאד, סטנדרט בתעשייה","ECL (Emitter-Coupled Logic): מהירה ביותר אך צורכת הספק רב","LVDS: לוגיקה דיפרנציאלית למהירויות גבוהות"]}
+     {h:"סקירה — ספרתי מול תקבילי",
+      t:"אלקטרוניקה ספרתית מיוצגת על ידי שני מצבים בלבד: '0' (Low, 0 V) ו-'1' (High, 3.3 V או 5 V). בניגוד לאות תקבילי (Analog) — הנע על פני קשת ערכים רצופה — האות הספרתי חסין ברעש ומאפשר עיבוד ואחסון מידע מדויקים. אלגברת בוליאן (George Boole, 1854) מספקת את המסגרת המתמטית לניתוח ועיצוב מעגלים ספרתיים.",
+      items:["0 = מתח נמוך (GND), 1 = מתח גבוה (VCC)","חסינות ברעש: שוליים לוגיים (Noise Margin)","מייצג מידע בינארי — בסיס המחשוב המודרני","ניתן לממש בטרנזיסטורי CMOS, TTL וטכנולוגיות נוספות"]
+     },
+     {h:"אלגברה בוליאנית — פעולות יסוד",
+      t:"שלוש הפעולות הבסיסיות של אלגברת בוליאן הן AND (כפל), OR (חיבור) ו-NOT (שלילה). כל פונקציה לוגית מורכבת ניתנת לביצוע על ידי שילוב שלוש פעולות אלו.",
+      formulas:[
+        {latex:"F = A \\cdot B", desc:"AND — הכפלה לוגית: פלט 1 רק כאשר שתי הכניסות הן 1"},
+        {latex:"F = A + B", desc:"OR — חיבור לוגי: פלט 1 כאשר לפחות כניסה אחת היא 1"},
+        {latex:"F = \\overline{A}", desc:"NOT — שלילה לוגית: היפוך הכניסה (0 ↔ 1)"},
+        {latex:"A + A \\cdot B = A", desc:"חוק ספיגה (Absorption) — צורה ראשונה"},
+        {latex:"A \\cdot (A + B) = A", desc:"חוק ספיגה (Absorption) — צורה שנייה"},
+        {latex:"A + \\overline{A} = 1", desc:"חוק משלים — OR עם שלילה תמיד 1"},
+        {latex:"A \\cdot \\overline{A} = 0", desc:"חוק קיום — AND עם שלילה תמיד 0"}
+      ]
+     },
+     {h:"חוקי דה-מורגן וצמצום ביטויים",
+      t:"חוקי דה-מורגן (Augustus De Morgan, 1847) הם כלי מרכזי לצמצום ביטויים בוליאניים ולמעבר בין שערי NAND ו-NOR. הם מאפשרים להפוך שערים ולפשט מבני מעגל.",
+      formulas:[
+        {latex:"\\overline{A \\cdot B} = \\overline{A} + \\overline{B}", desc:"חוק דה-מורגן הראשון — שלילת AND הופכת ל-OR"},
+        {latex:"\\overline{A + B} = \\overline{A} \\cdot \\overline{B}", desc:"חוק דה-מורגן השני — שלילת OR הופכת ל-AND"},
+        {latex:"AB + A\\overline{B} = A", desc:"צמצום בוליאני — גורם משותף (Consensus)"},
+        {latex:"\\overline{\\overline{A}} = A", desc:"חוק כפול-שלילה (Double Negation)"}
+      ]
+     },
+     {h:"שערים לוגיים — Logic Gates",
+      t:"שערי NAND ו-NOR הם שערים אוניברסלים — כל פונקציה לוגית ניתנת לביצוע בעזרת אחד מהם בלבד. שער XOR בודק אי-שוויון בין הכניסות ומשמש בחיבור ובגילוי שגיאות.",
+      formulas:[
+        {latex:"F = \\overline{A \\cdot B}", desc:"NAND — שלילת AND; שער אוניברסלי"},
+        {latex:"F = \\overline{A + B}", desc:"NOR — שלילת OR; שער אוניברסלי"},
+        {latex:"F = A \\oplus B", desc:"XOR — פלט 1 כאשר הכניסות שונות זו מזו"},
+        {latex:"F = \\overline{A \\oplus B}", desc:"XNOR — פלט 1 כאשר הכניסות שוות"}
+      ],
+      items:["NAND אוניברסלי: NOT(A) = NAND(A,A); AND = NOT(NAND(A,B))","NOR אוניברסלי: NOT(A) = NOR(A,A); OR = NOT(NOR(A,B))","XOR ניתן לבנות מ-4 שערי NAND בלבד","Fan-out: מספר הכניסות המקסימלי שניתן לחבר ליציאה בודדת"]
+     },
+     {h:"מעגלים צירופיים — Full Adder",
+      t:"מוסיף מלא (Full Adder) מחשב את סכום שלושה ביטים: A, B וסיבול כניסה Cin. הוא אבן-הבנין של ה-ALU (Arithmetic Logic Unit) בכל מעבד. ריבוי Full Adders בשרשרת יוצר מחבר n-ביט.",
+      formulas:[
+        {latex:"S = A \\oplus B \\oplus C_{in}", desc:"Sum — ביט הסכום: XOR משולש"},
+        {latex:"C_{out} = AB + BC_{in} + AC_{in}", desc:"Carry-out — ביט הסיבול: רוב בין שלוש הכניסות"}
+      ],
+      items:["Half Adder: מחשב A⊕B ו-AB ללא Cin","Full Adder = שני Half Adders + שער OR","Ripple Carry Adder: שרשרת n Full Adders לחיבור n-ביט — פשוט אך איטי","Carry Look-Ahead (CLA): מחשב סיבולות במקביל — מהיר בהרבה","ALU: מבצע פעולות חשבוניות (+,-) ולוגיות (AND,OR,XOR) בו-זמנית"]
+     },
+     {h:"מפות קרנו — Karnaugh Maps",
+      t:"מפת קרנו (Maurice Karnaugh, 1953) היא כלי גרפי לצמצום פונקציות בוליאניות. תאים סמוכים במפה שונים בביט אחד בלבד (קוד Gray). קיבוץ תאים של '1' בקבוצות של 1, 2, 4 או 8 מאפשר גזירה ישירה לביטוי SOP מינימלי.",
+      formulas:[
+        {latex:"AB + A\\overline{B} = A", desc:"צמצום: שני תאים שכנים — ביטול B ו-\\overline{B}"}
+      ],
+      items:["מפת 2 משתנים: טבלה 2×2 = 4 תאים","מפת 3 משתנים: טבלה 2×4 = 8 תאים","מפת 4 משתנים: טבלה 4×4 = 16 תאים","קיבוצים חייבים להיות כוחות של 2 (1,2,4,8)","קיבוצים יכולים לעגל קצוות המפה (Wrap-around)","Don't Care (X): ניתן לנצל לקבוצות גדולות יותר וצמצום נוסף"]
+     },
+     {h:"מעגלים עוקבים — Latches ו-Flip-Flops",
+      t:"בניגוד למעגלים צירופיים, מעגלים עוקבים (Sequential) שומרים מצב פנימי. ה-Flip-Flop הוא יחידת זיכרון המחזיקה ביט אחד. כל ה-Flip-Flops מסונכרנים על ידי שעון (Clock) לשמירה על סדר מוגדר.",
+      formulas:[
+        {latex:"Q^{+} = S + \\overline{R} \\cdot Q", desc:"SR Latch — מצב הבא: Set=1 מכניס 1, Reset=1 מכניס 0"},
+        {latex:"Q^{+} = D", desc:"D Flip-Flop — שומר את D בעלייה של השעון (Rising Edge)"},
+        {latex:"Q^{+} = J\\overline{Q} + \\overline{K}Q", desc:"JK Flip-Flop — הרחבה של SR ללא מצב לא-ידוע"}
+      ],
+      items:["SR Latch: Set (Q→1), Reset (Q→0), מצב אסור: S=R=1","D Flip-Flop: שומר D בעלייה של CLK — הנפוץ ביותר ברשמים","JK Flip-Flop: J=K=1 מחליף מצב (Toggle) — אין מצב אסור","T Flip-Flop: מחליף מצב בכל עלייה של CLK — שימושי במונים","מונה בינארי (Binary Counter): שרשרת T-FFs — סופר עלאות שעון","רשם הזזה (Shift Register): סדרה של D-FFs — גולש נתונים ימינה/שמאלה","FSM (Finite State Machine): מכונת מצבים — לב כל בקר ספרתי"]
+     },
+     {h:"שבבים, FPGA ו-VLSI",
+      t:"מעגלים משולבים ספרתיים (Digital IC) מיושמים בטכנולוגיות שונות בהתאם לדרישות הביצועים, הגמישות ועלות הייצור. VHDL ו-Verilog הן שפות תיאור חומרה (HDL) לתיאור, סימולציה וסינתזה של מעגלים ספרתיים.",
+      items:["ASIC: ביצועים וצריכת הספק אופטימליים, עלות פיתוח גבוהה — ייצור המוני","FPGA: ניתן לתכנות מחדש, מהיר לאב-טיפוס ויישומים גמישים","CPLD: פשוטים מ-FPGA, לפונקציות לוגיות קטנות-בינוניות","VHDL/Verilog: RTL → Synthesis → Place&Route → Bitstream","JTAG (IEEE 1149.1): פרוטוקול תכנות ובדיקה לשבבים — Boundary Scan","MSI/LSI/VLSI/ULSI: סיווג לפי מספר שערים לוגיים על שבב","STA (Static Timing Analysis): אימות Setup/Hold ונתיב קריטי"]
+     }
    ],
-   terms:["TTL","CMOS","FPGA","VHDL","Verilog","Flip-Flop","FSM","MUX","DEMUX","ALU","MSI","LSI","VLSI","JTAG"]
+   terms:["AND","OR","NOT","NAND","NOR","XOR","XNOR","De Morgan","K-Map","Full Adder","Half Adder","ALU","D-FF","JK-FF","SR Latch","T-FF","Counter","Shift Register","FSM","MUX","DEMUX","Ripple Carry","CLA","TTL","CMOS","FPGA","VHDL","Verilog","JTAG","ASIC","RTL","HDL","MSI","VLSI","Gray Code","Don't Care","STA"]
   },
   {id:"passive",icon:"🔩",color:"#fb923c",name:"רכיבים פסיביים",
    hook:"נגדים, קבלים, סלילים — הלבנים הראשוניות של כל מעגל",
@@ -1736,7 +1794,7 @@ const KNOWLEDGE_BASE=[
   },
 ];
 
-const MSYM={omega:"ω",Omega:"Ω",beta:"β",pi:"π",phi:"φ",Phi:"Φ",mu:"μ",alpha:"α",sigma:"σ",Sigma:"Σ",lambda:"λ",Delta:"Δ",delta:"δ",infty:"∞",approx:"≈",times:"×",cdot:"·",geq:"≥",leq:"≤",pm:"±",rho:"ρ",theta:"θ",int:"∫",partial:"∂",to:"→",arctan:"arctan",ln:"ln",sin:"sin",cos:"cos"};
+const MSYM={omega:"ω",Omega:"Ω",beta:"β",pi:"π",phi:"φ",Phi:"Φ",mu:"μ",alpha:"α",sigma:"σ",Sigma:"Σ",lambda:"λ",Delta:"Δ",delta:"δ",infty:"∞",approx:"≈",times:"×",cdot:"·",geq:"≥",leq:"≤",pm:"±",rho:"ρ",theta:"θ",int:"∫",partial:"∂",to:"→",arctan:"arctan",ln:"ln",sin:"sin",cos:"cos",oplus:"⊕"};
 function parseMath(src,col){
   let p=0,kid=0,noIt=false;
   const K=()=>String(kid++);
@@ -1787,6 +1845,7 @@ function parseMath(src,col){
           </span>
         );
       }
+      if(cmd==='overline'){const c=braced();return scr(<span key={K()} style={{display:"inline-flex",alignItems:"center",borderTop:`1.5px solid ${col}`,padding:"1px 2px 0"}}>{c}</span>);}
       if(cmd==='mathrm'||cmd==='text'){const prev=noIt;noIt=true;const c=braced();noIt=prev;return<span key={K()}>{c}</span>;}
       if(cmd==='left'||cmd==='right'){if(p<src.length&&src[p]!=='\\'&&src[p]!==' ')p++;return null;}
       if(MSYM[cmd]!=null){return scr(<span key={K()}>{MSYM[cmd]}</span>);}
