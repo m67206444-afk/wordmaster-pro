@@ -1746,15 +1746,91 @@ const KNOWLEDGE_BASE=[
    terms:["Resistor","Capacitor","Inductor","Ohm's Law","Joule Heating","Drude Model","Faraday","Lenz","Dielectric","Permittivity","Permeability","ESR","DCR","Q-Factor","Tolerance","SMD","MLCC","Tantalum","Wirewound","Time Constant","RC","RL","LC","Transient","Solenoid","Impedance","Reactance","Resonance","Voltage Divider","Pull-up","Pull-down","Bypass Cap","Saturation","Transformer"]
   },
   {id:"active",icon:"⚡",color:"#facc15",name:"רכיבים אקטיביים ומוליכים למחצה",
-   hook:"טרנזיסטורים, דיודות וחומרים מוליכים למחצה — מנוע המהפכה הדיגיטלית",
+   hook:"טרנזיסטורים, דיודות ופיזיקת מצב מוצק — בסיס כל המהפכה הטכנולוגית",
    sections:[
-     {h:"מוליכים למחצה",t:"חומרים מוליכים למחצה (כגון סיליקון, גרמניום, GaAs) מצויים בין מוליכים (מתכות) ומבודדים (פלסטיק). על ידי הכנסת אטומים זרים (Doping) ניתן לשלוט בהולכת החשמל: שיתוף אלקטרונים יוצר חומר מסוג N (עודף אלקטרונים) ויצירת 'חורים' יוצרת חומר מסוג P."},
-     {h:"דיודה (Diode)",items:["מפגש PN: מוליך בכיוון קדימה (Forward), חוסם בכיוון הפוך (Reverse)","דיודת זנר: מייצבת מתח בנקודת תמוטה (Breakdown Voltage)","דיודת שוטקי: מהירה עם נפילת מתח נמוכה (0.2–0.4 V)","LED (דיודת פליטת אור): ממירה אנרגיה חשמלית לאור גלוי או IR","PIN Diode: מהירה ומשמשת במעגלי RF ואופטיקה"]},
-     {h:"טרנזיסטור דו-קוטבי — BJT",t:"טרנזיסטור BJT (Bipolar Junction Transistor) מורכב משלוש שכבות: Emitter, Base, Collector. הזרם הקטן בבסיס שולט בזרם הגדול בקולקטור ביחס β (hFE). סוגים: NPN ו-PNP. יישומים: מגברי אות, מתגים דיגיטלים, מייצבי זרם."},
-     {h:"MOSFET — טרנזיסטור שדה",t:"MOSFET (Metal-Oxide-Semiconductor Field-Effect Transistor) הוא הרכיב הנפוץ ביותר בעולם. המתח על שער ה-Gate שולט על זרם Drain-Source. NMOS: פועל במתח Gate גבוה. PMOS: פועל במתח Gate נמוך. CMOS = NMOS + PMOS: צריכת הספק נמוכה מאד במצב סטטי. FinFET: טרנזיסטור תלת-ממדי בתהליכי 7nm ומטה."},
-     {h:"מנהרת JFET ואפקט שדה",items:["JFET: שולט בזרם דרך מעבר PN","Pinch-off voltage: מתח שמפסיק את הזרם","Depletion-mode vs Enhancement-mode","IGBT: שילוב BJT+MOSFET לאלקטרוניקת הספק"]}
+     {h:"פיזיקה של מוליכים למחצה",
+      t:"מוליכים למחצה (Semiconductors) מאופיינים בפער אנרגיה (Bandgap — Eg) צר בין פס הערכיות (Valence Band) לפס ההולכה (Conduction Band). בסיליקון (Si): Eg ≈ 1.12 eV; ב-GaAs: Eg ≈ 1.42 eV (Direct Bandgap — מהיר יותר לאופטיקה ו-RF). מוליך למחצה טהור (Intrinsic) כמעט ואינו מוליך — אילוח (Doping) משנה זאת לחלוטין. (לפי Neamen, Sedra/Smith)",
+      formulas:[
+        {latex:"n \\cdot p = n_i^{2}", desc:"חוק פעולת המסה (Mass Action Law) — מכפלת ריכוז אלקטרונים וחורים קבועה בטמפ' נתונה"}
+      ],
+      items:[
+        "חומר N: אילוח טור 5 (זרחן/ארסן) — אלקטרונים הם נושאי הרוב (Majority Carriers)",
+        "חומר P: אילוח טור 3 (בורון) — חורים (Holes) הם נושאי הרוב",
+        "נושאי מיעוט (Minority Carriers): אלקטרונים ב-P, חורים ב-N — קריטיים בדיודות וב-BJT",
+        "ריכוז אינטרינזי Si בטמפ' חדר: ni ≈ 1.5×10¹⁰ cm⁻³"
+      ]
+     },
+     {h:"דיודה — צומת PN ומשוואת שוקלי",
+      t:"ברגע חיבור P ל-N, אלקטרונים מ-N ממלאים חורים ב-P (דיפוזיה). נוצר אזור המחסור (Depletion Region) ובו שדה חשמלי שמונע מעבר נוסף — נוצר מתח פנימי Built-in Potential (Vbi ≈ 0.7V בסיליקון). משוואת שוקלי מתארת את הקשר הלא-לינארי המדויק:",
+      formulas:[
+        {latex:"I_D = I_S(e^{V_D/V_T} - 1)", desc:"משוואת שוקלי (Shockley) — IS = זרם זליגה [A], VD = מתח, VT = מתח תרמי"},
+        {latex:"V_T = \\frac{kT}{q} \\approx 26\\,\\mathrm{mV}", desc:"מתח תרמי — k = בולצמן [J/K], T = טמפרטורה [K], q = מטען אלקטרון [C]"}
+      ],
+      items:[
+        "ממתח קדמי (V > 0.7V Si): הדיודה מוליכה — Depletion Region מצטמצם",
+        "ממתח אחורי (Reverse Bias): הדיודה חוסמת — Depletion Region מתרחב",
+        "פריצה (Breakdown): אפקט מפולת (Avalanche) או אפקט זנר — זרם עולה בחדות",
+        "דגם מפושט: V_D ≈ 0.7V (Si), 0.3V (Ge) בממתח קדמי — נפוץ בחישובים מהירים"
+      ]
+     },
+     {h:"סוגי דיודות מיוחדות",
+      t:"מגוון דיודות מיוחדות קיים לשימושים שונים — כולן מבוססות על פיזיקת מגע PN עם שינויים בחומרים, בגיאומטריה או בנקודת הפעולה.",
+      formulas:[
+        {latex:"\\lambda = \\frac{hc}{E_g}", desc:"LED: אורך גל הפוטון הנפלט — h = פלנק [J·s], c = מהירות אור [m/s], Eg = פער הבאנד [eV]"}
+      ],
+      items:[
+        "זנר (Zener): עובדת בפריצה (Breakdown) — מתח קבוע; שימוש: מייצבי מתח (Voltage Regulator)",
+        "שוטקי (Schottky): מגע מתכת–N, אין מטעינות מיעוט — מיתוג מהיר מאד, 0.2–0.4V",
+        "LED: חומר Direct Bandgap (GaAs, GaN, InGaN) — ריקומבינציה פולטת פוטון, צבע תלוי ב-Eg",
+        "PIN: שכבת Intrinsic רחבה בין P ל-N — קיבול נמוך מאד, מהירות גבוהה, לרצפי RF ופוטו-דיודות",
+        "Varactor: קיבול משתנה עם מתח — שמושה ב-VCO, PLL ומעגלי הסתגלות תדר"
+      ]
+     },
+     {h:"BJT — טרנזיסטור דו-קוטבי",
+      t:"BJT (Bipolar Junction Transistor) בנוי משלוש שכבות: Emitter (E), Base (B), Collector (C). ב-NPN: אלקטרונים מוזרקים מה-E המאולח כבד דרך ה-B הצר והקל (P), ונסחפים ע\"י שדה ה-C. מאחר שה-B צר מאד, רוב האלקטרונים חוצים אותו ל-C — זרם קטן ב-Base שולט על זרם גדול ב-Collector.",
+      formulas:[
+        {latex:"I_C = \\beta \\cdot I_B", desc:"הגבר זרם (β / hFE) — טיפוסי: β = 50 עד 300"},
+        {latex:"\\beta = \\frac{I_C}{I_B}", desc:"הגדרת β — יחס אלקטרונים שהגיעו ל-Collector לכל אלקטרון שנכנס ל-Base"},
+        {latex:"I_E = I_C + I_B", desc:"KCL בצמתי BJT — זרם ה-Emitter שווה לסכום זרמי C ו-B"},
+        {latex:"g_m = \\frac{I_C}{V_T}", desc:"טרנסקונדוקטנס (gm) — מקשר שינוי מתח-Base לשינוי זרם-Collector; מפתח לחישוב הגבר"}
+      ],
+      items:[
+        "NPN: Emitter ← N כבד, Base ← P קל (צר!), Collector ← N בינוני — הנפוץ ביותר",
+        "PNP: כיוונים הפוכים — שימושי כמקור זרם (Current Source) ובמגברי Class-B",
+        "אזורי פעולה: Active (הגבר), Saturation (מתג סגור), Cut-off (מתג פתוח)",
+        "הגבר מתח מגבר Emitter משותף: Av = -gm·RC — מינוס מסמן היפוך פאזה",
+        "Early Effect (VA): תלות קטנה של IC ב-VCE בפועל — מגבילה ה-output impedance"
+      ]
+     },
+     {h:"MOSFET — אזורי פעולה ו-CMOS",
+      t:"ה-MOSFET נשלט ע\"י מתח Gate הבודד מהמוליך למחצה בשכבת SiO₂ — ללא זרם כניסה (IG = 0). כשמתח Gate עולה מעל מתח הסף (VTH), נוצרת תעלת אינוורסיה (Inversion Layer) המקשרת Source ל-Drain. שלושה אזורי פעולה: Cut-off, לינארי (Triode) ורווייה (Saturation).",
+      formulas:[
+        {latex:"I_D = \\frac{1}{2}\\mu_n C_{ox}\\frac{W}{L}(V_{GS}-V_{TH})^{2}", desc:"NMOS ברווייה (Saturation) — אזור ההגבר; μnCox·W/L = K = פרמטר הרכיב"},
+        {latex:"g_m = \\mu_n C_{ox}\\frac{W}{L}(V_{GS}-V_{TH})", desc:"טרנסקונדוקטנס MOSFET — שיפוע עקומת ID-VGS בנקודת עבודה"},
+        {latex:"P \\approx f \\cdot C_L \\cdot V_{DD}^{2}", desc:"הספק דינמי ב-CMOS — פרופורציונלי לתדר השעון f; במצב סטטי P → 0"}
+      ],
+      items:[
+        "Cut-off (VGS < VTH): ID ≈ 0 — אין תעלה, הטרנזיסטור כבוי",
+        "Triode (Linear): VDS < VGS − VTH — תעלה פתוחה, מתנהג כנגד R משתנה",
+        "Saturation: VDS ≥ VGS − VTH — Pinch-off, ID נשלט רק ע\"י VGS",
+        "CMOS: NMOS (Pull-down) + PMOS (Pull-up) — לעולם אחד פעיל; הספד סטטי ≈ 0",
+        "FinFET: מבנה 3D — שליטה חזקה בתעלה מתחת ל-22nm, מפחית Short-Channel Effects",
+        "W/L ratio: הגדלת W מעלה ID וgm; הקטנת L מגדיל מהירות ומפחית מגרעי Short-Channel"
+      ]
+     },
+     {h:"JFET, Depletion/Enhancement ו-IGBT",
+      t:"ה-JFET (Junction FET) עובד בצורה הפוכה מ-MOSFET — התעלה קיימת כברירת מחדל; ממתח אחורי על Gate מרחיב את Depletion Region ו\"חונק\" אותה. ה-IGBT (Insulated-Gate Bipolar Transistor) משלב שתי הטכנולוגיות: עכבת Gate אינסופית כ-MOSFET + נשיאה ביפולרית לזרמים ומתחים ענקיים כ-BJT.",
+      items:[
+        "JFET Normally-ON (Depletion-mode): מוליך בVGS=0; מתח שלילי חונק את התעלה",
+        "MOSFET Enhancement-mode: Normally-OFF — מתח Gate בונה תעלה; הרוב המוחלט",
+        "Pinch-off Voltage (VP): מתח Gate שמעליו Depletion Regions מאחדים וסוגרים את תעלת ה-JFET",
+        "IGBT: Gate כ-MOSFET (IG=0) + מוליכות Collector כ-BJT — VCE(sat) = 1–3V בעשרות אמפרים",
+        "יישומי IGBT: רכבים חשמליים (EV), רכבות, מהפכי סולאר, ריתוך — שליטה במאות/אלפי אמפר",
+        "GaN ו-SiC (Wide-Bandgap): מתחי שבירה גבוהים, מהירות מיתוג גבוהה — דור הבא של הספק"
+      ]
+     }
    ],
-   terms:["BJT","MOSFET","JFET","IGBT","FinFET","NPN","PNP","Beta","Early Effect","Pinch-off","Breakdown","Schottky","Zener","LED","GaAs","SiC","GaN"]
+   terms:["BJT","MOSFET","JFET","IGBT","FinFET","NPN","PNP","Bandgap","Doping","Intrinsic","N-type","P-type","Depletion Region","Built-in Potential","Shockley","Transconductance","Beta","VTH","Pinch-off","Saturation","Cut-off","CMOS","Inversion Layer","Minority Carriers","Zener","Schottky","LED","PIN Diode","Varactor","gm","Mass Action Law","Avalanche","GaN","SiC","Early Effect","W/L Ratio"]
   },
   {id:"micro",icon:"🔬",color:"#4ade80",name:"מיקרואלקטרוניקה",
    hook:"מיליארדי טרנזיסטורים על שטח ציפורן — כיצד מיוצר מעגל משולב?",
